@@ -1,0 +1,44 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+publish/
+*.log
+
+# Replit specific
+.replit
+.config/
+.env
+config.env
+setup-production-env.sh
+production-env.sh
+
+# Attached assets from Replit
+attached_assets/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio
+*.sln.docstates
+.vscode/
+
+# User-specific files
+*.rsuser
+*.userosscache
+*.sln.docstates
+
+# NuGet Packages
+*.nupkg
+**/packages/*

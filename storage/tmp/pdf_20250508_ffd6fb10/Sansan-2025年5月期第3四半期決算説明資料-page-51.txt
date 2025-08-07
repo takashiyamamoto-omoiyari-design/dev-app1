@@ -1,0 +1,56 @@
+## Eight事業
+# 「Eight」：マネタイズプラン
+ユーザー400万人以上のネットワークを活用した企業向けサービスによるマネタイズ
+
+## 個人向けサービス
+
+### 名刺管理サービス
+#### BtoC
+![Eight Premium Logo](eight_premium_logo.png)
+**eight premium**
+
+月額固定料金  
+（年間契約）
+
+名刺データダウンロード等の追加機能が利用可能な個人向けサービス
+
+## 企業向けサービス (1)
+
+### 名刺管理サービス
+#### BtoB
+![Eight Team Logo](eight_team_logo.png)
+**eight team**
+
+月額固定料金  
+（年間契約）
+
+「Eight」における名刺共有を企業内で可能にするサービス
+
+### イベントサービス
+#### BtoB
+![Meets Climber Logos](meets_climber_logos.png)
+Meets / Climbers  
+DX CAMP Eight EXPO
+
+固定料金 (2)  
+（都度課金）
+
+「Eight」のビジネスネットワークを活用した各種ビジネスイベントサービス
+
+### 採用関連サービス
+#### BtoB
+![Eight Career Design Logo](eight_career_design_logo.png)
+**eight career design**
+
+固定料金 (3)  
+（期間契約）
+
+「Eight」内の転職潜在層にリーチ可能なプロフェッショナルリクルーティング
+
+---
+
+1. Eight事業のBtoBサービスには、「logmi Biz」「logmi Finance」「logmi Tech」のイベント書き起こしサービスも別途含む
+2. 開催形態等に応じて、複数の料金設定あり
+3. 採用決定時に追加料金あり
+
+© Sansan, Inc.	Page 50

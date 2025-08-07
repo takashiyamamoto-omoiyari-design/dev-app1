@@ -1,0 +1,2 @@
+[config]
+command = ./replit_direct_deploy.sh

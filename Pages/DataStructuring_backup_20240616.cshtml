@@ -1,0 +1,2465 @@
+@page
+@model AzureRag.Pages.DataStructuringModel
+@{
+    ViewData["Title"] = "ILUデータ構造化ソリューション";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="shortcut icon" href="/images/ilu-logo.png" />
+    <link rel="stylesheet" href="/css/data-structuring.css" />
+    <!-- 形態素解析ライブラリは使用しない -->
+    <!-- フォントアイコン用のFont Awesome追加 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- JSZip と FileSaver ライブラリを追加 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        /* リセットCSS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.5;
+            color: #333;
+            background-color: #f9fafb;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        /* データ構造化ソリューション用スタイル */
+        .data-structuring-container {
+          display: flex;
+          flex-direction: column;
+          height: 100vh;
+          overflow: hidden;
+        }
+
+        /* ヘッダースタイル */
+        .ds-header {
+          background-color: white;
+          border-bottom: 1px solid #e5e7eb;
+          padding: 0.75rem 1rem;
+          display: flex;
+          align-items: center;
+          z-index: 10;
+        }
+
+        .header-logo {
+          display: flex;
+          align-items: center;
+        }
+
+        .header-title {
+          margin-left: 0.5rem;
+          font-size: 1.5rem !important; /* 優先度を上げるために !important を使用 */
+          font-weight: 500;
+        }
+
+        /* メインコンテナスタイル */
+        .main-container {
+          display: flex;
+          flex: 1;
+          overflow: hidden;
+        }
+
+        /* 左サイドバー */
+        .left-sidebar {
+          width: 240px;
+          background-color: white;
+          border-right: 1px solid #e5e7eb;
+          display: flex;
+          flex-direction: column;
+          position: relative;
+          overflow-y: auto;
+        }
+
+        .left-resizer {
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 4px;
+          height: 100%;
+          background-color: #e5e7eb;
+          cursor: ew-resize;
+        }
+
+        .upload-btn {
+          margin: 1rem;
+          background-color: #3389ca; /* 指定の青色に変更 */
+          color: white;
+          padding: 0.5rem 0.75rem;
+          border-radius: 0.375rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 500;
+          cursor: pointer;
+          border: none;
+        }
+
+        .page-list-header {
+          padding: 0 1rem;
+          margin-top: 1rem;
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #6b7280;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .page-list {
+          margin-top: 0.5rem;
+          padding: 0 1rem;
+        }
+
+        .page-item {
+          display: flex;
+          align-items: center;
+          padding: 0.5rem 0.75rem;
+          margin-bottom: 0.25rem;
+          border-radius: 0.375rem;
+          cursor: pointer;
+        }
+
+        .page-item.active {
+          background-color: #eff6ff;
+        }
+
+        .page-item.active .file-icon {
+          color: #3b82f6;
+        }
+
+        .page-item.active .page-name {
+          color: #1d4ed8;
+          font-weight: 500;
+        }
+
+        /* コンテンツエリア */
+        .content-area {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+
+        .content-toolbar {
+          background-color: white;
+          border-bottom: 1px solid #e5e7eb;
+          padding: 0.75rem 1.5rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .toolbar-actions {
+          display: flex;
+          gap: 0.75rem;
+        }
+
+        .toolbar-btn {
+          display: flex;
+          align-items: center;
+          padding: 0.375rem 0.75rem;
+          border-radius: 0.375rem;
+          font-size: 0.875rem;
+          font-weight: 500;
+          cursor: pointer;
+        }
+
+        .download-btn {
+          background-color: white;
+          color: #374151;
+          border: 1px solid #d1d5db;
+        }
+
+        .chat-btn {
+          background-color: #3389ca; /* 指定の青色に変更 */
+          color: white;
+          border: none;
+        }
+
+        .document-content {
+          flex: 1;
+          overflow-y: auto;
+          padding: 1.5rem;
+          background-color: #f9fafb;
+        }
+
+        .document-inner {
+          /* max-width: 48rem; */
+          margin: 0 auto;
+          background-color: white;
+          padding: 2rem;
+          border-radius: 0.5rem;
+          box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+
+        .document-page {
+          display: none;
+        }
+
+        .document-page.active {
+          display: block;
+        }
+
+        /* 右サイドバー（チャット） */
+        .right-sidebar {
+          width: 320px;
+          background-color: white;
+          border-left: 1px solid #e5e7eb;
+          display: none;
+          flex-direction: column;
+          position: relative;
+        }
+
+        .right-sidebar.open {
+          display: flex;
+        }
+
+        .right-resizer {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 4px;
+          height: 100%;
+          background-color: #e5e7eb;
+          cursor: ew-resize;
+        }
+
+        .chat-header {
+          padding: 0.75rem 1rem;
+          border-bottom: 1px solid #e5e7eb;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .close-btn {
+          background: none;
+          border: none;
+          color: #6b7280;
+          cursor: pointer;
+          font-size: 1.25rem;
+        }
+
+        .chat-messages {
+          flex: 1;
+          overflow-y: auto;
+          padding: 1rem;
+        }
+
+        .chat-message {
+          display: flex;
+          align-items: flex-start;
+          margin-bottom: 1rem;
+        }
+
+        .chat-message.user {
+          justify-content: flex-end;
+        }
+
+        .avatar {
+          width: 2rem;
+          height: 2rem;
+          border-radius: 9999px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 500;
+          color: white;
+          margin-right: 0.75rem;
+        }
+
+        .chat-message.user .avatar {
+          margin-right: 0;
+          margin-left: 0.75rem;
+          background-color: #9ca3af;
+        }
+
+        .system-avatar {
+          background-color: #3389ca; /* 指定の青色に変更 */
+        }
+
+        .message-bubble {
+          padding: 0.75rem;
+          border-radius: 0.5rem;
+          max-width: 80%;
+          overflow-wrap: break-word;
+          word-break: break-word;
+        }
+
+        .system-bubble {
+          background-color: #f3f4f6;
+          max-height: 100%;
+          overflow: visible;
+        }
+
+        .user-bubble {
+          background-color: #dbeafe;
+        }
+
+        .source-section {
+          margin-top: 0.75rem;
+          padding-top: 0.75rem;
+          border-top: 1px solid #e5e7eb;
+        }
+
+        .source-link {
+          display: flex;
+          align-items: center;
+          margin-top: 0.25rem;
+          font-size: 0.75rem;
+          color: #3389ca; /* 指定の青色に変更 */
+          cursor: pointer;
+        }
+
+        .source-link:hover {
+          text-decoration: underline;
+        }
+        
+        .empty-message {
+          padding: 2rem 1rem;
+          text-align: center;
+          color: #6b7280;
+          font-size: 0.875rem;
+          font-style: italic;
+        }
+
+        .chat-input-container {
+          padding: 0.75rem;
+          border-top: 1px solid #e5e7eb;
+        }
+
+        .chat-input {
+          width: 100%;
+          padding: 0.5rem;
+          border: 1px solid #d1d5db;
+          border-radius: 0.375rem;
+        }
+
+        .chat-input-info {
+          margin-top: 0.5rem;
+          font-size: 0.75rem;
+          color: #6b7280;
+        }
+
+        /* 空の状態表示 */
+        .empty-state {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 300px;
+          color: #6b7280;
+          text-align: center;
+          font-size: 1rem;
+        }
+        
+        /* PDF処理通知スタイル */
+        .processing-notification {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          padding: 25px 30px;
+          background-color: white;
+          border-radius: 12px;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          z-index: 1000;
+          min-width: 500px;
+          max-width: 80%;
+          max-height: 80vh;
+          overflow: hidden;
+        }
+        
+        .processing-notification.error {
+          background-color: #fee2e2;
+          border-left: 4px solid #ef4444;
+        }
+        
+        .processing-notification .notification-actions {
+          display: flex;
+          margin-top: 8px;
+          gap: 10px;
+        }
+        
+        .processing-notification-header {
+          display: flex;
+          align-items: center;
+          width: 100%;
+          margin-bottom: 15px;
+        }
+        
+        .processing-log {
+          max-height: 300px;
+          width: 100%;
+          overflow-y: auto;
+          margin-top: 15px;
+          border-top: 1px solid #e5e7eb;
+          padding-top: 15px;
+          font-family: monospace;
+          font-size: 12px;
+          background-color: #f9fafb;
+          padding: 10px;
+          border-radius: 6px;
+          display: none;
+        }
+        
+        .log-entry {
+          margin-bottom: 5px;
+          padding-bottom: 5px;
+          border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .log-entry-new {
+          background-color: #f0f9ff;
+          animation: fadeBackground 2s forwards;
+        }
+        
+        @@keyframes fadeBackground {
+          from { background-color: #f0f9ff; }
+          to { background-color: transparent; }
+        }
+        
+        .processing-notification .notification-action-button {
+          background-color: #f3f4f6;
+          border: 1px solid #d1d5db;
+          color: #374151;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 0.75rem;
+          cursor: pointer;
+        }
+        
+        .processing-notification .notification-action-button:hover {
+          background-color: #e5e7eb;
+        }
+        
+        .processing-spinner {
+          width: 24px;
+          height: 24px;
+          border: 3px solid #e5e7eb;
+          border-radius: 50%;
+          border-top-color: #3389ca;
+          animation: spin 1s linear infinite;
+          margin-right: 15px;
+        }
+        
+        @@keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        
+        .processing-text {
+          font-size: 18px;
+          font-weight: 500;
+          color: #4b5563;
+          margin-left: 10px;
+        }
+        
+        .processing-notification.error .processing-spinner {
+          display: none;
+        }
+        
+        .processing-notification.error .processing-text {
+          color: #b91c1c;
+        }
+        
+        .recovery-button {
+          background-color: #4b5563; /* 濃いグレー */
+          color: white;
+        }
+        
+        .recovery-button:hover {
+          background-color: #374151 !important; /* さらに濃いグレー */
+        }
+        
+        .reload-button {
+          background-color: #2563eb; /* 青 */
+          color: white;
+        }
+        
+        .reload-button:hover {
+          background-color: #1d4ed8 !important; /* 濃い青 */
+        }
+        
+        /* タイムアウト時の表示 */
+        .processing-notification.timeout .processing-spinner {
+          display: none;
+        }
+        
+        .processing-notification.timeout .processing-text {
+          color: #f59e0b; /* オレンジ */
+        }
+    </style>
+</head>
+<body>
+
+<div class="data-structuring-container">
+    <!-- ヘッダー -->
+    <header class="ds-header">
+        <div class="header-logo">
+            <a href="/DataStructuring" style="text-decoration: none; display: flex; align-items: center; color: inherit;">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iNDMiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTguNzQ3IDQzSDBMMjMuMjU3IDBIMzJMOC43NDcgNDNaIiBmaWxsPSJ1cmwoI2EpIi8+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJhIiB4MT0iMCIgeTE9IjIxLjUwMiIgeDI9IjMyIiB5Mj0iMjEuNTAyIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agc3RvcC1jb2xvcj0iIzBENTdBNyIvPjxzdG9wIG9mZnNldD0iLjUiIHN0b3AtY29sb3I9IiMzMzg5Q0EiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM3MUJDRTkiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48L3N2Zz4=" width="32" height="43" alt="ILUロゴ" />
+                <span class="header-title" style="font-size: 1.5rem !important;"><strong>ILUデータ構造化ソリューション</strong></span>
+            </a>
+        </div>
+        <div style="margin-left: auto; display: flex; gap: 15px; align-items: center;">
+            <!-- 一括ダウンロードボタン -->
+            <button id="batch-download-btn" class="header-button" style="display: flex; align-items: center; background-color: #f9fafb; border: 1px solid #d1d5db; border-radius: 6px; padding: 0.375rem 0.75rem; cursor: pointer; font-size: 0.875rem;">
+                <i class="fas fa-download" style="margin-right: 5px;"></i>一括ダウンロード
+            </button>
+            
+            <!-- 設定ボタン -->
+            <button id="settings-btn" class="header-button" style="display: flex; align-items: center; background-color: #f9fafb; border: 1px solid #d1d5db; border-radius: 6px; padding: 0.375rem 0.75rem; cursor: pointer; font-size: 0.875rem;">
+                <i class="fas fa-cog" style="margin-right: 5px;"></i>設定
+            </button>
+            
+            <!-- アカウントアイコン -->
+            <div id="account-icon" style="width: 36px; height: 36px; border-radius: 50%; background-color: #3389ca; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold;">
+                U
+            </div>
+            
+            <!-- アカウントドロップダウンメニュー (初期状態では非表示) -->
+            <div id="account-dropdown" style="display: none; position: absolute; right: 16px; top: 60px; background-color: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); width: 200px; z-index: 1000;">
+                <div style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
+                    <div style="font-weight: 500;">ユーザー</div>
+                    <div style="font-size: 0.875rem; color: #6b7280;">ログイン中</div>
+                </div>
+                <div style="padding: 8px;">
+                    <a href="#" onclick="return logout();" style="display: block; padding: 8px 16px; color: #ef4444; text-decoration: none; border-radius: 4px;">
+                        <i class="fas fa-sign-out-alt" style="margin-right: 8px;"></i>ログアウト
+                    </a>
+                </div>
+            </div>
+            
+            <!-- デバッグリンク（開発用、必要に応じて削除可能） -->
+            <div style="display: none;">
+                <a href="/api/data-structuring/logs" target="_blank" style="text-decoration: none; color: #3389ca; font-size: 0.875rem; display: flex; align-items: center;">
+                    <i class="far fa-file-alt" style="margin-right: 5px;"></i>システムログ
+                </a>
+                <a href="/api/data-structuring/debug-logs" target="_blank" style="text-decoration: none; color: #d97706; font-size: 0.875rem; display: flex; align-items: center;">
+                    <i class="fas fa-bug" style="margin-right: 5px;"></i>デバッグログ
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインレイアウト -->
+    <div class="main-container">
+        <!-- 左サイドバー -->
+        <div class="left-sidebar" id="leftSidebar">
+            <div class="left-resizer" id="leftResizer"></div>
+            <button class="upload-btn" id="upload-btn">アップロード</button>
+            <div class="page-list-header">ページ一覧</div>
+            <div class="page-list" id="page-list">
+                <!-- ページリストはJavaScriptで動的に生成 -->
+            </div>
+        </div>
+
+        <!-- コンテンツエリア -->
+        <div class="content-area">
+            <div class="content-toolbar">
+                <div>
+                    <h1 id="documentTitle">ドキュメントを選択してください</h1>
+                    <p id="documentMeta"></p>
+                </div>
+                <div class="toolbar-actions">
+                    <button class="toolbar-btn download-btn" id="download-btn">ダウンロード</button>
+                    <button class="toolbar-btn chat-btn" id="chatToggleBtn">チャット</button>
+                </div>
+            </div>
+            
+            <div class="document-content">
+                <div class="document-inner" id="document-content">
+                    <!-- ドキュメントコンテンツはJavaScriptで動的に生成 -->
+                    <div class="empty-state">
+                        <p>左側のページ一覧からドキュメントを選択してください</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右サイドバー（チャット） -->
+        <div class="right-sidebar" id="rightSidebar">
+            <div class="right-resizer" id="rightResizer"></div>
+            <div class="chat-header">
+                <div>AIアシスタント</div>
+                <button class="close-btn" id="close-chat-btn">×</button>
+            </div>
+            
+            <div class="chat-messages" id="chat-messages">
+                <!-- システムメッセージ -->
+                <div class="chat-message">
+                    <div class="avatar system-avatar">I</div>
+                    <div class="message-bubble system-bubble">
+                        <p>こんにちは！AIアシスタントです。どのようにお手伝いできますか？</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-input-container">
+                <input type="text" class="chat-input" id="chat-input" placeholder="メッセージを入力...">
+                <div class="chat-input-info">
+                    レスポンスはドキュメントの内容に基づいて生成されます
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// データ構造化ソリューション用JavaScript
+
+// ログアウト処理用の関数をグローバルに定義
+function logout() {
+    // Cookieを削除（複数の方法で確実に削除）
+    document.cookie = "ILUSolution.Auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    document.cookie = "ILUSolution.Auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=" + window.location.hostname;
+    
+    // メインサイトにリダイレクト
+    window.location.href = '/Logout';
+    
+    // リダイレクトを確実にするためのコード
+    setTimeout(function() {
+        alert('ログアウトしました。ログイン画面に移動します。');
+        window.location.replace('/Logout');
+    }, 500);
+    
+    return false;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // 各要素の取得
+    const leftSidebar = document.getElementById('leftSidebar');
+    const leftResizer = document.getElementById('leftResizer');
+    const rightSidebar = document.getElementById('rightSidebar');
+    const rightResizer = document.getElementById('rightResizer');
+    const chatToggleBtn = document.getElementById('chatToggleBtn');
+    const closeChatBtn = document.getElementById('close-chat-btn');
+    const uploadBtn = document.getElementById('upload-btn');
+    const downloadBtn = document.getElementById('download-btn');
+    const chatInput = document.getElementById('chat-input');
+    const chatMessages = document.getElementById('chat-messages');
+    const pageList = document.getElementById('page-list');
+    const documentTitle = document.getElementById('documentTitle');
+    const documentMeta = document.getElementById('documentMeta');
+    const documentContent = document.getElementById('document-content');
+    
+    // 新しく追加したヘッダーのボタン要素
+    const batchDownloadBtn = document.getElementById('batch-download-btn');
+    const settingsBtn = document.getElementById('settings-btn');
+    const accountIcon = document.getElementById('account-icon');
+    
+    let selectedDocument = null;
+    
+    // kuromojiトークナイザーのインスタンス（使用しない）
+    let tokenizer = null;
+    let segmenter = true; // 常にtrueにして機能を有効化
+    
+    // シンプルなキーワード抽出の初期化（常に成功）
+    function initTokenizer() {
+        return new Promise((resolve, reject) => {
+            try {
+                console.log('シンプルなキーワード抽出を初期化します');
+                // 何もしない - 常に成功
+                resolve(true);
+            } catch (err) {
+                console.error('キーワード抽出の初期化に失敗しました:', err);
+                reject(err);
+            }
+        });
+    }
+    
+    // テキストからキーワードを抽出する関数
+    function extractKeywords(text) {
+        console.log('テキスト分析開始: ', text.substring(0, 50) + '...');
+        
+        // 1. 全角スペース、改行、タブを半角スペースに変換
+        const normalizedText = text.replace(/[\s　\n\t]+/g, ' ');
+        
+        // 2. 助詞や句読点で区切られた単語を抽出
+        // 日本語の助詞（は、が、を、に、で、と、から、まで、など）の前にある単語は名詞の可能性が高い
+        const nounsBeforeParticles = [];
+        
+        // 助詞の前のパターンを抽出（名詞+助詞のパターン）
+        const particlePatterns = [
+            /([^\s,.。、,.!?！？(){}\[\]]{2,})(は|が|を|に|で|と|の|から|まで|より|へ|や|など)/g,
+            /([^\s,.。、,.!?！？(){}\[\]]{2,})(について|による|において|として|ための|による|によって|に関する)/g
+        ];
+        
+        particlePatterns.forEach(pattern => {
+            let match;
+            while ((match = pattern.exec(normalizedText)) !== null) {
+                if (match[1] && match[1].length >= 2) {
+                    nounsBeforeParticles.push(match[1]);
+                }
+            }
+        });
+        
+        // 3. 句読点、記号で分割してキーワード候補を抽出
+        const words = normalizedText.split(/[\s,.。、,.!?！？()（）「」『』［］\[\]{}:：;"']+/)
+            .filter(word => word.length >= 2) // 2文字以上の単語だけを対象
+            .filter(word => !(/^\d+$/.test(word))) // 数字だけの単語を除外
+            .filter(word => word.trim() !== ''); // 空文字を除外
+        
+        // 4. 名詞の可能性が高い単語を特定
+        const potentialNouns = words.filter(word => {
+            // 語尾が動詞活用で終わる単語は除外
+            const verbEndings = ['する', 'します', 'した', 'される', 'された', 'れる', 'られる', 'せる', 'させる', 
+                              'ます', 'ました', 'まして', 'です', 'でした', 'ている', 'ていた', 'なる', 'なった',
+                              'たい', 'たく', 'たかっ'];
+            
+            for (const ending of verbEndings) {
+                if (word.endsWith(ending) && word.length > ending.length) {
+                    return false;
+                }
+            }
+            
+            // 形容詞の語尾を持つ単語は除外
+            const adjEndings = ['い', 'かった', 'くない', 'くて', 'ければ', 'しい', 'しく', 'しかっ'];
+            for (const ending of adjEndings) {
+                if (word.endsWith(ending) && word.length > ending.length + 1) {
+                    return false;
+                }
+            }
+            
+            return true;
+        });
+        
+        // 5. 保険ドメイン特化の名詞辞書
+        const domainNouns = [
+            // 保険一般
+            '保険', '契約', '証券', '約款', '更新', '解約', '満期', '払込', '加入', '請求', '支払', '給付',
+            // 保険種類
+            '終身', '養老', '定期', '医療', '学資', '年金', '収入', '傷害', '疾病', '就業', '介護', '長期',
+            // 契約関連
+            '契約者', '被保険者', '受取人', '保険料', '保険金', '返戻金', '特約', '特則', '条項', '約定',
+            // 保険金関連
+            '死亡', '入院', '手術', '通院', '障害', '給付', '診断', '療養', '就業', '災害', '事故', '疾病',
+            // 手続き
+            '申込', '告知', '診査', '引受', '査定', '支払', '請求', '返戻', '貸付', '振替', '変更', '訂正',
+            // 保険会社・組織
+            '会社', '窓口', '本社', '支社', '営業', '代理店', '担当', 'コールセンター',
+            // デジタル関連
+            'オンライン', 'サイト', 'アプリ', 'ウェブ', 'メール', 'マイページ', 'ログイン', 'パスワード'
+        ];
+        
+        // 6. 質問パターンによる抽出強化（「〇〇は？」「〇〇について」などのパターン）
+        const questionPatterns = [
+            /(.{2,})(とは|って|について|の場合|する方法|する手続き|に必要な)/g,
+            /(.{2,})(の変更|の解約|の請求|の支払|の確認)/g
+        ];
+        
+        const patternNouns = [];
+        questionPatterns.forEach(pattern => {
+            let match;
+            while ((match = pattern.exec(normalizedText)) !== null) {
+                if (match[1] && match[1].length >= 2) {
+                    patternNouns.push(match[1]);
+                }
+            }
+        });
+        
+        // 7. 優先順位付けしてキーワード候補を結合
+        const candidates = [
+            // 最優先: 文法パターンから抽出した名詞（助詞の前など）
+            ...nounsBeforeParticles,
+            // 次優先: 質問パターンから抽出した名詞
+            ...patternNouns,
+            // 次優先: ドメイン辞書にある名詞
+            ...potentialNouns.filter(word => domainNouns.some(noun => word.includes(noun))),
+            // 最後: その他の名詞候補
+            ...potentialNouns.filter(word => 
+                !nounsBeforeParticles.includes(word) && 
+                !patternNouns.includes(word) && 
+                !domainNouns.some(noun => word.includes(noun))
+            )
+        ];
+        
+        // 8. 重複を削除
+        const uniqueKeywords = [...new Set(candidates)];
+        
+        // 9. 最大10件に制限
+        const limitedKeywords = uniqueKeywords.slice(0, 10);
+        
+        console.log('抽出されたキーワード:', limitedKeywords);
+        return limitedKeywords;
+    }
+    
+    // キーワードを拡張する関数（シノニム対応）
+    function expandKeywords(keywords) {
+        // シノニム辞書（例）- 実際には大規模な辞書または外部APIを使用
+        const synonymDict = {
+            '保険': ['保障', 'インシュアランス', '生命保険', '損害保険'],
+            '契約': ['申込', '契約書', '契約者'],
+            '解約': ['解除', '解消', '終了', 'キャンセル'],
+            '証券': ['保険証券', '保険契約', 'ポリシー'],
+            '支払': ['払込', '保険料', '掛け金', 'プレミアム'],
+            '給付金': ['保険金', '支払金', '給付'],
+            '満期': ['満了', '期限', '期間満了'],
+            '特約': ['特則', 'オプション', '付加契約'],
+            'AI': ['人工知能', '機械学習', 'エーアイ'],
+            'データ': ['情報', 'デジタル情報', 'データセット'],
+            '請求': ['申請', '手続き', '申し出', 'クレーム']
+        };
+        
+        // 各キーワードを拡張
+        const expandedKeywords = [...keywords];
+        
+        keywords.forEach(keyword => {
+            // 辞書にあるキーワードの場合は、同義語を追加
+            if (synonymDict[keyword]) {
+                expandedKeywords.push(...synonymDict[keyword]);
+            }
+        });
+        
+        // 重複を削除して返す
+        return [...new Set(expandedKeywords)];
+    }
+    
+    // キーワードをフォーマットする関数
+    function formatKeywords(keywords) {
+        return keywords.map(kw => `#${kw}`).join(' ');
+    }
+    
+    // 感情解析APIのスタブ関数
+    async function analyzeEmotion(text) {
+        console.log('感情解析が呼び出されました:', text);
+        // スタブ実装：実際のAPIを呼び出す代わりに固定値を返す
+        // 本番実装時はここを実際のAPI呼び出しに置き換える
+        await new Promise(resolve => setTimeout(resolve, 500)); // APIの待ち時間をシミュレート
+        return {
+            emotions: ['怒り', '不安']
+        };
+    }
+    
+    // 辞書アイコンのローディングアニメーション要素を作成
+    function createDictionaryAnimation() {
+        const loaderContainer = document.createElement('div');
+        loaderContainer.className = 'dictionary-loader';
+        loaderContainer.innerHTML = `
+            <div class="dictionary-icon">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                  <!-- Dictionary base -->
+                  <rect x="20" y="30" width="60" height="50" rx="2" fill="#4A7293" />
+                  <rect x="22" y="32" width="56" height="46" rx="1" fill="#E6F1F8" />
+                  
+                  <!-- Dictionary pages with text lines only (no actual text) -->
+                  <g>
+                    <rect x="22" y="32" width="56" height="46" fill="#F0F8FF" />
+                    
+                    <!-- Text lines - left page -->
+                    <line x1="25" y1="38" x2="45" y2="38" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="25" y1="41" x2="43" y2="41" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="25" y1="44" x2="44" y2="44" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="25" y1="47" x2="42" y2="47" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="25" y1="50" x2="45" y2="50" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="25" y1="53" x2="41" y2="53" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="25" y1="56" x2="44" y2="56" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="25" y1="59" x2="43" y2="59" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="25" y1="62" x2="45" y2="62" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="25" y1="65" x2="42" y2="65" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="25" y1="68" x2="40" y2="68" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="25" y1="71" x2="43" y2="71" stroke="#A0B8D0" stroke-width="0.4" />
+                    
+                    <!-- Text lines - right page -->
+                    <line x1="55" y1="38" x2="75" y2="38" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="55" y1="41" x2="73" y2="41" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="55" y1="44" x2="74" y2="44" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="55" y1="47" x2="72" y2="47" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="55" y1="50" x2="75" y2="50" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="55" y1="53" x2="71" y2="53" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="55" y1="56" x2="74" y2="56" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="55" y1="59" x2="73" y2="59" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="55" y1="62" x2="75" y2="62" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="55" y1="65" x2="72" y2="65" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="55" y1="68" x2="70" y2="68" stroke="#A0B8D0" stroke-width="0.4" />
+                    <line x1="55" y1="71" x2="73" y2="71" stroke="#A0B8D0" stroke-width="0.4" />
+                    
+                    <!-- Dictionary spine -->
+                    <line x1="50" y1="32" x2="50" y2="78" stroke="#B0C6D8" stroke-width="0.7" />
+                  </g>
+                  
+                  <!-- Moving highlighting effect -->
+                  <g>
+                    <!-- First highlight on left page -->
+                    <rect x="25" y="43" width="0" height="3" fill="#FFFF00" fill-opacity="0.5">
+                      <animate 
+                        attributeName="width" 
+                        values="0;20;0" 
+                        dur="3s" 
+                        repeatCount="indefinite" 
+                        begin="0s" />
+                      <animate 
+                        attributeName="x" 
+                        values="25;25;45" 
+                        dur="3s" 
+                        repeatCount="indefinite" 
+                        begin="0s" />
+                    </rect>
+                    
+                    <!-- Second highlight on left page -->
+                    <rect x="25" y="53" width="0" height="3" fill="#FFFF00" fill-opacity="0.5">
+                      <animate 
+                        attributeName="width" 
+                        values="0;20;0" 
+                        dur="3s" 
+                        repeatCount="indefinite" 
+                        begin="1s" />
+                      <animate 
+                        attributeName="x" 
+                        values="25;25;45" 
+                        dur="3s" 
+                        repeatCount="indefinite" 
+                        begin="1s" />
+                    </rect>
+                    
+                    <!-- First highlight on right page -->
+                    <rect x="55" y="58" width="0" height="3" fill="#FFFF00" fill-opacity="0.5">
+                      <animate 
+                        attributeName="width" 
+                        values="0;20;0" 
+                        dur="3s" 
+                        repeatCount="indefinite" 
+                        begin="0.5s" />
+                      <animate 
+                        attributeName="x" 
+                        values="55;55;75" 
+                        dur="3s" 
+                        repeatCount="indefinite" 
+                        begin="0.5s" />
+                    </rect>
+                    
+                    <!-- Second highlight on right page -->
+                    <rect x="55" y="68" width="0" height="3" fill="#FFFF00" fill-opacity="0.5">
+                      <animate 
+                        attributeName="width" 
+                        values="0;20;0" 
+                        dur="3s" 
+                        repeatCount="indefinite" 
+                        begin="1.5s" />
+                      <animate 
+                        attributeName="x" 
+                        values="55;55;75" 
+                        dur="3s" 
+                        repeatCount="indefinite" 
+                        begin="1.5s" />
+                    </rect>
+                  </g>
+                </svg>
+            </div>
+            <div class="dictionary-text">辞書と照合中...</div>
+        `;
+        return loaderContainer;
+    }
+
+    // API関連の関数
+    async function fetchDocumentList() {
+        try {
+            // Azure Searchからファイルパスを取得
+            const response = await fetch('/api/data-structuring/filepaths');
+            
+            if (!response.ok) {
+                console.error('ファイルパス一覧の取得に失敗しました:', response.status);
+                return []; // エラー時は空の配列を返す
+            }
+            
+            const data = await response.json();
+            console.log('取得したファイルパス:', data);
+            
+            // APIから受け取ったデータをコンソールに出力
+            console.log('データの型:', typeof data);
+            console.log('配列か?:', Array.isArray(data));
+            
+            // データの内容を詳しく確認
+            if (Array.isArray(data) && data.length > 0) {
+                console.log('最初のアイテムのプロパティ:', Object.keys(data[0]));
+                console.log('fileTypeプロパティの有無:', data[0].hasOwnProperty('fileType'));
+                if (data[0].fileType) {
+                    console.log('fileTypeの値:', data[0].fileType);
+                }
+            }
+            
+            // APIから受け取ったデータがオブジェクトの配列の場合（コントローラーで生成した形式）
+            if (Array.isArray(data)) {
+                console.log('データはコントローラーから整形済み配列');
+                return data; // すでに整形されているので、そのまま返す
+            }
+            
+            // データがない場合は空の配列を返す
+            if (!data) {
+                console.warn('Azure Searchからデータが取得できませんでした。');
+                return [];
+            }
+            
+            // 想定外の形式の場合でも処理を試みる
+            console.log('データ形式が想定と異なります - コントローラーで整形されていない可能性があります');
+            
+            try {
+                // APIから直接filepathプロパティを持つオブジェクト配列が返された場合
+                if (data.value && Array.isArray(data.value)) {
+                    console.log('data.valueを配列として処理します');
+                    return data.value.map((item, index) => {
+                        // filepathプロパティがある場合
+                        if (item.filepath) {
+                            const filename = item.filepath.split('/').pop() || item.filepath;
+                            
+                            // PDFファイルかどうかを判断
+                            const isPDF = item.filepath.includes('pdf_') || /\.pdf/i.test(item.filepath);
+                            
+                            // ファイル名からPDF文書名とページ番号を抽出
+                            let displayName = filename;
+                            let pageNum = null;
+                            
+                            if (filename.includes('-page-')) {
+                                const parts = filename.split('-page-');
+                                const pdfName = parts[0];
+                                pageNum = parts[1].replace('.txt', '');
+                                displayName = `【PDF文書】 ${pdfName} (ページ ${pageNum})`;
+                            }
+                            
+                            return {
+                                id: `path_${index}`,
+                                name: displayName,
+                                filepath: item.filepath,
+                                fileType: isPDF ? 'PDF' : 'TEXT'
+                            };
+                        }
+                        
+                        return {
+                            id: `item_${index}`,
+                            name: `Document ${index + 1}`,
+                            filepath: JSON.stringify(item),
+                            fileType: 'UNKNOWN'
+                        };
+                    });
+                }
+                
+                // その他の形式の場合は空配列を返す
+                console.warn('予期しないデータ形式:', typeof data);
+                return [];
+            } catch (innerError) {
+                console.error('データ処理中のエラー:', innerError);
+                return [];
+            }
+        } catch (error) {
+            console.error('fetchDocumentList エラー:', error);
+            return []; // エラー時は空の配列を返す
+        }
+    }
+
+    async function fetchDocumentContent(docId) {
+        try {
+            // docIdが"path_"で始まる場合は、filepathを使用してコンテンツを取得
+            const item = pageItems.find(item => item.id === docId);
+            if (!item || !item.filepath) {
+                throw new Error('ファイルパスが見つかりません');
+            }
+            
+            const response = await fetch(`/api/data-structuring/content?filepath=${encodeURIComponent(item.filepath)}`);
+            
+            if (!response.ok) {
+                console.error('ファイルコンテンツの取得に失敗しました:', response.status);
+                return null;
+            }
+            
+            // JSONオブジェクトとしてレスポンスを取得
+            const responseData = await response.json();
+            console.log('取得したレスポンスデータ:', responseData);
+            
+            // JSONオブジェクトからコンテンツを抽出
+            if (responseData && responseData.content) {
+                console.log('コンテンツサンプル:', responseData.content.substring(0, 100) + '...');
+                
+                return {
+                    id: docId,
+                    name: item.name || responseData.name,
+                    filepath: item.filepath || responseData.filepath,
+                    content: responseData.content,
+                    timestamp: new Date()
+                };
+            } else {
+                console.error('レスポンスデータにコンテンツがありません:', responseData);
+                return null;
+            }
+        } catch (error) {
+            console.error('fetchDocumentContent エラー:', error);
+            return null;
+        }
+    }
+
+    async function sendChatMessage(message, docId) {
+        try {
+            console.log(`チャットメッセージ送信: ${message}, ドキュメントID: ${docId}`);
+            
+            // ローダーアニメーションを表示
+            const chatContainer = document.querySelector('.right-sidebar');
+            const loaderAnimation = createDictionaryAnimation();
+            chatContainer.appendChild(loaderAnimation);
+            
+            // ユーザーのクエリ部分を抽出（プロンプトテンプレートを使用している場合）
+            const userQuery = message.includes('\n\n') 
+                ? message.split('\n\n').pop()
+                : message;
+                
+            console.log('キーワード抽出するクエリ:', userQuery);
+            
+            // キーワード抽出と拡張
+            let keywords = [];
+            let expandedKeywords = [];
+            let emotions = [];
+            
+            try {
+                // キーワード抽出
+                keywords = extractKeywords(userQuery);
+                console.log('抽出されたキーワード:', keywords);
+                
+                // キーワード拡張
+                expandedKeywords = expandKeywords(keywords);
+                console.log('拡張されたキーワード:', expandedKeywords);
+                
+                // 感情解析を実行
+                const emotionResult = await analyzeEmotion(userQuery);
+                emotions = emotionResult.emotions || [];
+                console.log('検出された感情:', emotions);
+                
+                // 処理時間を少し待って、アニメーションが見えるようにする
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            } catch (analysisError) {
+                console.warn('解析中にエラーが発生しました:', analysisError);
+            }
+            
+            // クエリにキーワード情報を追加
+            const enhancedMessage = {
+                original_message: message,
+                extracted_keywords: keywords,
+                expanded_keywords: expandedKeywords,
+                emotions: emotions,
+                fileId: docId
+            };
+            
+            console.log('拡張されたメッセージオブジェクト:', enhancedMessage);
+            
+            // APIリクエスト
+            const response = await fetch('/api/data-structuring/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: message,
+                    fileId: docId,
+                    keywords: expandedKeywords // 拡張キーワードをAPIに送信
+                })
+            });
+            
+            // ローダーアニメーションを削除
+            if (loaderAnimation && loaderAnimation.parentNode) {
+                loaderAnimation.parentNode.removeChild(loaderAnimation);
+            }
+            
+            if (!response.ok) {
+                throw new Error(`Error: ${response.status} ${response.statusText}`);
+            }
+            
+            // レスポンスの解析
+            const data = await response.json();
+            console.log('チャットAPI応答 (全体):', data);
+            
+            if (data.debug_info) {
+                console.log('デバッグ情報:', data.debug_info);
+            }
+            
+            if (data.sources && data.sources.length > 0) {
+                console.log('ソース情報:', data.sources);
+                data.sources.forEach((source, index) => {
+                    console.log(`ソース ${index + 1}:`, source);
+                });
+            }
+            
+            // データの整形
+            return {
+                content: data.content || "申し訳ありませんが、応答の生成中にエラーが発生しました。",
+                sources: Array.isArray(data.sources) ? data.sources : [],
+                keywords: keywords.length > 0 ? keywords : [], // 抽出したキーワードを結果に含める
+                emotions: emotions // 感情解析結果を含める
+            };
+        } catch (error) {
+            console.error('チャットメッセージ送信エラー:', error);
+            
+            // ローダーアニメーションを削除（エラー時も）
+            const loaderAnimation = document.querySelector('.dictionary-loader');
+            if (loaderAnimation && loaderAnimation.parentNode) {
+                loaderAnimation.parentNode.removeChild(loaderAnimation);
+            }
+            
+            // エラー時の簡易レスポンス
+            return {
+                content: "申し訳ありませんが、応答の生成中にエラーが発生しました。",
+                sources: [],
+                keywords: [],
+                emotions: []
+            };
+        }
+    }
+
+    // ページアイテムのグローバル変数（ファイルパスを保持するため）
+    let pageItems = [];
+    
+    // UIの初期化
+    // 処理ログをポーリングする関数
+    async function startPollingProcessLogs(processId) {
+        let pollingInterval;
+        let pollCounter = 0; // ポーリングカウンター
+        const MAX_POLLS = 720; // 最大ポーリング回数（1時間の5秒ごとのポーリング）
+        const logElement = document.querySelector('#upload-notification .processing-log');
+        const notification = document.querySelector('#upload-notification');
+        let previousLogsCount = 0; // 前回までに取得したログの数
+        
+        // ポーリングを実装する関数
+        async function pollLogs() {
+            try {
+                pollCounter++;
+                const response = await fetch(`/api/data-structuring/process-logs/${processId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.logs && data.logs.length > 0) {
+                        // 新しいログのみを取得
+                        const newLogs = data.logs.slice(previousLogsCount);
+                        console.log(`ポーリング #${pollCounter}: 新しいログ ${newLogs.length}件`);
+                        
+                        // 新しいログを表示
+                        newLogs.forEach(log => {
+                            const logItem = document.createElement('div');
+                            logItem.classList.add('log-entry', 'log-entry-new');
+                            // JST 時刻に変換
+                            let displayLog = log;
+                            const m = log.match(/^\[(\d{2}):(\d{2}):(\d{2})\]/);
+                            if (m) {
+                                let h = (parseInt(m[1]) + 9) % 24;
+                                const hh = ('0' + h).slice(-2);
+                                const mm = m[2];
+                                const ss = m[3];
+                                displayLog = `[${hh}:${mm}:${ss}]` + log.slice(10);
+                            }
+                            logItem.textContent = displayLog;
+                            logElement.appendChild(logItem);
+                            
+                            // エラーメッセージかどうかをチェック
+                            if (log.includes('エラー:') || log.includes('失敗しました') || log.includes('Error:')) {
+                                logItem.style.color = '#b91c1c';
+                            }
+                            
+                            // 処理完了を検知
+                            if (log.includes('PDFの処理が完了しました')) {
+                                // 成功または失敗のカウント情報を取得
+                                const completionInfo = log.match(/ページ数: (\d+)、成功: (\d+)、失敗: (\d+)/);
+                                
+                                if (completionInfo) {
+                                    const totalPages = parseInt(completionInfo[1], 10);
+                                    const successCount = parseInt(completionInfo[2], 10);
+                                    const failCount = parseInt(completionInfo[3], 10);
+                                    
+                                    // 処理の完了を通知
+                                    stopPolling();
+                                    
+                                    // 全て失敗した場合はエラー表示
+                                    if (failCount === totalPages) {
+                                        notification.classList.add('error');
+                                        {
+                                            const txt = notification.querySelector('.processing-notification-header .processing-text');
+                                            if (txt) txt.textContent = `エラー: PDFの処理が完了しましたが、${failCount}ページすべての処理に失敗しました。`;
+                                        }
+                                        
+                                        // ログダウンロードボタンと処理完了確認ボタンを表示
+                                        const actionsDiv = notification.querySelector('.notification-actions');
+                                        actionsDiv.style.display = 'flex';
+                                    } else if (failCount > 0) {
+                                        // 一部失敗があった場合
+                                        notification.classList.remove('error');
+                                        {
+                                            const txt = notification.querySelector('.processing-notification-header .processing-text');
+                                            if (txt) txt.textContent = `PDFの処理が完了しました。${successCount}ページ成功、${failCount}ページ失敗。ページを更新しています...`;
+                                        }
+                                            
+                                        // ページをリロード
+                                        setTimeout(() => {
+                                            window.location.reload();
+                                        }, 3000);
+                                    } else {
+                                        // 全て成功した場合
+                                        if (window.completeProcessing) {
+                                            window.completeProcessing();
+                                        }
+                                    }
+                                    return; // ポーリングを終了
+                                }
+                            }
+                        });
+                        
+                        // 取得したログの数を更新
+                        previousLogsCount = data.logs.length;
+                        
+                        // 最新のログが見えるように自動スクロール
+                        logElement.scrollTop = logElement.scrollHeight;
+                    }
+                }
+                
+                // 最大ポーリング回数に達したかチェック
+                if (pollCounter >= MAX_POLLS) {
+                    stopPolling();
+                    console.log('最大ポーリング回数に達しました。ポーリングを停止します。');
+                    notification.classList.add('timeout');
+                    {
+                        const txt = notification.querySelector('.processing-notification-header .processing-text');
+                        if (txt) txt.textContent = 'PDF処理がタイムアウトしました。処理が完了しているか確認するか、ページを更新してください。';
+                    }
+                    
+                    // リカバリーボタンと更新ボタンを表示
+                    const actionsDiv = notification.querySelector('.notification-actions');
+                    actionsDiv.style.display = 'flex';
+                    
+                    // リカバリーボタンと更新ボタンにイベントリスナーを設定
+                    const reloadBtn = notification.querySelector('#reload-btn');
+                    
+                    // ページ更新ボタン
+                    if (reloadBtn) {
+                        reloadBtn.addEventListener('click', function() {
+                            window.location.reload();
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('処理ログ取得エラー:', error);
+            }
+        }
+        
+        // ポーリングを停止する関数
+        function stopPolling() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+                console.log('ログポーリングを停止しました');
+            }
+        }
+        
+        // ログ表示領域を表示
+        logElement.style.display = 'block';
+        
+        // 最初に一度ログを取得
+        await pollLogs();
+        
+        // 5秒ごとにログを取得（サーバー負荷軽減のため）
+        pollingInterval = setInterval(pollLogs, 5000);
+        
+        // 停止用の関数を返す
+        return stopPolling;
+    }
+
+    // UIの初期化
+    async function initUI() {
+        console.log('UIの初期化を開始します');
+        
+        try {
+            // シンプルなキーワード抽出を初期化
+            console.log('キーワード抽出機能を初期化します');
+            try {
+                await initTokenizer().catch(err => {
+                    console.warn('キーワード抽出機能の初期化に失敗しました:', err);
+                });
+            } catch (tokenError) {
+                console.warn('キーワード抽出機能の初期化に失敗しました:', tokenError);
+            }
+            
+            // ドキュメントリストを取得して表示
+            console.log('ドキュメントリストを取得します');
+            const documents = await fetchDocumentList();
+            renderDocumentList(documents);
+            
+            // ページアイテムを保存（グローバル変数に）
+            pageItems = documents;
+            
+            // イベントリスナーを設定
+            console.log('イベントリスナーをセットアップします');
+            setupEventListeners();
+            
+            console.log('UIの初期化が完了しました');
+        } catch (error) {
+            console.error('UI初期化中にエラーが発生しました:', error);
+        }
+    }
+
+    // ドキュメントリストのレンダリング
+    function renderDocumentList(documents) {
+        pageList.innerHTML = '';
+        
+        console.log('ドキュメントリストのレンダリング:', documents);
+        console.log('ドキュメントの型:', typeof documents);
+        console.log('ドキュメントは配列か?:', Array.isArray(documents));
+        
+        if (!documents || documents.length === 0) {
+            pageList.innerHTML = '<div class="empty-state" style="padding: 1rem;">構造化済みテキストファイルがありません</div>';
+            console.log('ドキュメントが空です');
+            return;
+        }
+
+        documents.forEach(doc => {
+            const item = document.createElement('div');
+            item.className = 'page-item';
+            item.dataset.docId = doc.id;
+            
+            // ファイルタイプアイコン
+            let fileIcon = '<i class="fas fa-file-alt" style="margin-right: 8px; color: #3389ca;"></i>';
+            
+            // ファイルタイプまたは名前に基づいてアイコンを決定
+            if (doc.fileType === 'PDF' || (doc.name && doc.name.includes('【PDF文書】'))) {
+                fileIcon = '<i class="fas fa-file-pdf" style="margin-right: 8px; color: #3389ca;"></i>';
+                console.log(`PDFファイルを検出: ${doc.name}`);
+            }
+            
+            // ファイル名を表示（対応するアイコン付き）
+            item.innerHTML = `
+                ${fileIcon}
+                <span class="page-name">${doc.name}</span>
+            `;
+            
+            // デバッグログ
+            console.log(`ドキュメント項目を追加: ID=${doc.id}, 名前=${doc.name}`);
+            
+            item.addEventListener('click', () => selectDocument(doc.id));
+            pageList.appendChild(item);
+        });
+    }
+
+    // ドキュメントの選択
+    async function selectDocument(docId, highlight = false) {
+        console.log(`ドキュメント選択: ID=${docId}, ハイライト=${highlight}`);
+        
+        // すべてのハイライトを解除
+        document.querySelectorAll('.page-item').forEach(item => {
+            item.classList.remove('highlighted');
+        });
+        
+        // 現在の選択を解除
+        document.querySelectorAll('.page-item').forEach(item => {
+            item.classList.remove('active');
+        });
+
+        // 新しい選択を適用
+        const selectedItem = document.querySelector(`.page-item[data-doc-id="${docId}"]`);
+        if (selectedItem) {
+            selectedItem.classList.add('active');
+            
+            // ハイライトが指定された場合
+            if (highlight) {
+                console.log(`ハイライト適用: ${docId}`);
+                selectedItem.classList.add('highlighted');
+                // スクロールして要素が見えるようにする
+                selectedItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        } else {
+            console.log(`選択アイテムが見つかりません: ${docId}`);
+        }
+
+        // ドキュメントのコンテンツを取得
+        selectedDocument = await fetchDocumentContent(docId);
+
+        // UI更新
+        if (selectedDocument) {
+            documentTitle.textContent = selectedDocument.name;
+            documentMeta.textContent = '';
+            
+            // コンテンツを見やすく整形（改行を保持）
+            const formattedContent = selectedDocument.content
+                .replace(/\n/g, '<br>')
+                .replace(/\s{2,}/g, function(match) {
+                    return '&nbsp;'.repeat(match.length);
+                });
+            
+            documentContent.innerHTML = `<div style="line-height: 1.4; font-size: 0.95rem; white-space: pre-wrap; padding: 0; margin: 0;">${formattedContent}</div>`;
+        } else {
+            documentTitle.textContent = 'ドキュメントを取得できませんでした';
+            documentMeta.textContent = '';
+            documentContent.innerHTML = '<div class="empty-state">ドキュメントの読み込みに失敗しました</div>';
+        }
+    }
+
+    // チャットの表示/非表示を切り替え
+    function toggleChat() {
+        rightSidebar.classList.toggle('open');
+    }
+
+    // ユーザーメッセージの追加
+    function addUserMessage(message) {
+        const messageEl = document.createElement('div');
+        messageEl.className = 'chat-message user';
+        messageEl.innerHTML = `
+            <div class="message-bubble user-bubble">
+                <div style="white-space: pre-wrap;">${message}</div>
+            </div>
+            <div class="avatar">U</div>
+        `;
+        chatMessages.appendChild(messageEl);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // AIメッセージの追加
+    function addAIMessage(message, sources = [], keywords = [], emotions = []) {
+        console.log('AIメッセージ追加関数が呼び出されました');
+        console.log('受け取ったソース:', sources);
+        console.log('キーワード:', keywords);
+        console.log('感情:', emotions);
+        
+        const messageEl = document.createElement('div');
+        messageEl.className = 'chat-message';
+        
+        // 感情タグのHTMLを生成
+        let emotionsHtml = '';
+        if (emotions && emotions.length > 0) {
+            emotionsHtml = `
+                <div class="emotion-tags">
+                    <div class="emotions-title">検出された感情:</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                        ${emotions.map(emotion => `<span class="emotion-tag">${emotion}</span>`).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // キーワードタグのHTMLを生成
+        let keywordsHtml = '';
+        if (keywords && keywords.length > 0) {
+            keywordsHtml = `
+                <div class="keyword-tags">
+                    <div class="keywords-title">検索キーワード:</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                        ${keywords.map(kw => `<span class="keyword-tag">${kw}</span>`).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // ソース情報のHTMLを生成
+        let sourcesHtml = '';
+        if (sources && sources.length > 0) {
+            console.log('ソースセクションを生成します');
+            sourcesHtml = `
+                <div class="source-section">
+                    <p style="font-size: 0.75rem; font-weight: 500; color: #6b7280; margin-bottom: 0.5rem;">参照ソース:</p>
+                    ${sources.map(source => `
+                        <a class="source-link" data-doc-id="${source.id}">
+                            ${source.name}
+                        </a>
+                    `).join('')}
+                </div>
+            `;
+            console.log('生成したソースHTML:', sourcesHtml);
+        }
+        
+        console.log('AIメッセージのHTMLを生成します');
+        const messageHtml = `
+            <div class="avatar system-avatar">I</div>
+            <div class="message-bubble system-bubble">
+                ${emotionsHtml}
+                ${keywordsHtml}
+                <div style="max-height: 400px; overflow-y: auto; white-space: pre-wrap;">${message.replace(/\n/g, '<br>')}</div>
+                ${sourcesHtml}
+            </div>
+        `;
+        console.log('生成したHTML:', messageHtml);
+        messageEl.innerHTML = messageHtml;
+        
+        chatMessages.appendChild(messageEl);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // ソースリンクにイベントリスナーを追加
+        messageEl.querySelectorAll('.source-link').forEach(link => {
+            link.addEventListener('click', () => {
+                // path_で始まるIDの場合、filepathに基づいて対応するアイテムを探す
+                const docId = link.dataset.docId;
+                
+                if (docId.startsWith('path_')) {
+                    // ファイル名を取得
+                    const filename = link.textContent.trim();
+                    
+                    // filepathプロパティを持つソースの場合
+                    const source = sources.find(s => s.name === filename);
+                    if (source && source.filepath) {
+                        // filepathに基づいて対応するページアイテムを検索
+                        const matchingItem = pageItems.find(item => 
+                            item.filepath && item.filepath.includes(filename));
+                        
+                        if (matchingItem) {
+                            // 対応するアイテムを選択（ハイライト表示あり）
+                            console.log(`対応するアイテムが見つかりました: ID=${matchingItem.id}, 名前=${matchingItem.name}`);
+                            selectDocument(matchingItem.id, true);
+                            return;
+                        }
+                    }
+                }
+                
+                // 通常の動作（IDに基づいて選択、ハイライトあり）
+                selectDocument(docId, true);
+            });
+        });
+    }
+
+    // 時間のフォーマット
+    function formatTimeAgo(date) {
+        if (!date) return '';
+        
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
+        
+        if (diffHours >= 24) {
+            return `${Math.floor(diffHours / 24)} days ago`;
+        } else if (diffHours >= 1) {
+            return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+        } else {
+            return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+        }
+    }
+
+    // イベントリスナーのセットアップ
+    function setupEventListeners() {
+        // チャットトグルボタン
+        chatToggleBtn.addEventListener('click', toggleChat);
+        closeChatBtn.addEventListener('click', toggleChat);
+        
+        // チャット入力
+        chatInput.addEventListener('keydown', async function(e) {
+            if (e.key === 'Enter' && chatInput.value.trim() !== '') {
+                const userMessage = chatInput.value.trim();
+                chatInput.value = '';
+                
+                // ユーザーメッセージを表示
+                addUserMessage(userMessage);
+                
+                // プロンプトテンプレートを取得
+                const promptTemplate = localStorage.getItem('dsPromptTemplate');
+                console.log('取得したプロンプトテンプレート:', promptTemplate);
+                
+                // プロンプトテンプレートとユーザーメッセージを組み合わせる
+                let message = userMessage;
+                
+                // プロンプトテンプレートが存在する場合、メッセージの前に追加
+                if (promptTemplate && promptTemplate.trim() !== '') {
+                    // この部分が重要 - テンプレートとメッセージの間に必ず改行を2つ入れる
+                    message = `${promptTemplate}\n\n${userMessage}`;
+                    
+                    // デバッグログをより詳細にして、分かりやすく表示
+                    console.log('============== メッセージ組み立て ===============');
+                    console.log('1. プロンプトテンプレート: ', promptTemplate);
+                    console.log('2. ユーザーメッセージ: ', userMessage);
+                    console.log('3. 最終的なメッセージ(\\n\\nで区切り): ', message);
+                    console.log('4. テンプレート長: ', promptTemplate.length);
+                    console.log('5. 最終メッセージ長: ', message.length);
+                    // 実際の改行コードを表示
+                    const separator = message.substring(promptTemplate.length, promptTemplate.length + 10);
+                    console.log('6. 区切り文字（バイナリ表示）: ', Array.from(separator).map(c => c.charCodeAt(0)));
+                    console.log('===============================================');
+                } else {
+                    console.log('プロンプトテンプレートが設定されていないか空です');
+                }
+                
+                // AI応答を取得して表示
+                const docId = selectedDocument ? selectedDocument.id : null;
+                const response = await sendChatMessage(message, docId);
+                
+                // 感情、キーワードとともにAIメッセージを表示
+                addAIMessage(response.content, response.sources, response.keywords, response.emotions);
+            }
+        });
+        
+        // アップロードボタン
+        uploadBtn.addEventListener('click', function() {
+            // 非表示のファイル入力要素を作成
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.pdf';
+            fileInput.style.display = 'none';
+            
+            // ファイル選択ダイアログで選択された時の処理
+            fileInput.addEventListener('change', async function() {
+                if (this.files.length > 0) {
+                    const pdfFile = this.files[0];
+                    
+                    // ファイルサイズを確認 (10MB以上の場合は警告)
+                    if (pdfFile.size > 10 * 1024 * 1024) {
+                        const confirmUpload = confirm(`選択されたファイルのサイズが大きいです (${(pdfFile.size/1024/1024).toFixed(2)}MB)。\nアップロード処理に時間がかかる可能性があります。続けますか？`);
+                        if (!confirmUpload) return;
+                    }
+                    
+                    // ユーザーに処理中であることを通知
+                    const notification = document.createElement('div');
+                    notification.classList.add('processing-notification');
+                    notification.id = 'upload-notification';
+                    notification.innerHTML = `
+                        <div class="processing-text" style="text-align:center; width:100%;">処理中です。しばらくお待ちください...</div>
+                        <div class="processing-log"></div>
+                        <div class="notification-actions" style="display:none; text-align:center;">
+                            <button class="notification-action-button reload-button" id="reload-btn">ページを更新</button>
+                        </div>
+                    `;
+                    document.body.appendChild(notification);
+                    
+                    try {
+                        // FormDataを作成
+                        const formData = new FormData();
+                        formData.append('file', pdfFile);
+                        
+                        console.log(`PDFファイル「${pdfFile.name}」をアップロード中...`);
+                        
+                        // ファイルをアップロードしてAzure OpenAIのGPT-4oモデルで処理
+                        const response = await fetch('/api/data-structuring/process-pdf', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        // レスポンスを取得
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error || 'PDFの処理中にエラーが発生しました');
+                        }
+                        
+                        const result = await response.json();
+                        console.log('PDF処理結果:', result);
+                        
+                        // 処理IDを取得
+                        if (result.details && result.details.processId) {
+                            const processId = result.details.processId;
+                            console.log(`処理ID: ${processId}`);
+                            
+                            // 処理ログの取得を開始
+                            startPollingProcessLogs(processId);
+                        }
+                        
+                        // 処理が開始されたことを通知
+                        {
+                            const txt = notification.querySelector('.processing-notification-header .processing-text');
+                            if (txt) txt.textContent = 'PDF処理を実行中です...ログをリアルタイムに表示しています';
+                        }
+                        
+                        // 処理結果待ちのメッセージ
+                        const logDiv = notification.querySelector('.processing-log');
+                        if (!logDiv.innerHTML) {
+                            logDiv.innerHTML = '<div class="log-entry">処理中...PDFのサイズによっては完了まで数分かかる場合があります</div>';
+                        }
+                        
+                        // 処理が完了したことを通知するための関数を返す
+                        window.completeProcessing = () => {
+                            {
+                                const txt = notification.querySelector('.processing-notification-header .processing-text');
+                                if (txt) txt.textContent = 'PDF処理が完了しました！';
+                            }
+                            const actionsDiv = notification.querySelector('.notification-actions');
+                            actionsDiv.style.display = 'flex';
+                           
+                            // ページ更新ボタンにイベントリスナーを追加
+                            const reloadBtn = notification.querySelector('#reload-btn');
+                            if (reloadBtn) {
+                                reloadBtn.addEventListener('click', function() {
+                                    window.location.reload();
+                                });
+                            }
+                        };
+                    } catch (error) {
+                        console.error('PDFアップロード中にエラーが発生:', error);
+                        {
+                            const txt = notification.querySelector('.processing-text');
+                            if (txt) txt.textContent = `エラー: ${error.message}`;
+                        }
+                        notification.classList.add('error');
+                        
+                        // ログダウンロードボタンと処理完了確認ボタンを表示
+                        const actionsDiv = notification.querySelector('.notification-actions');
+                        actionsDiv.style.display = 'flex';
+                        
+                        // リカバリーボタンと更新ボタンにイベントリスナーを設定
+                        const reloadBtn = notification.querySelector('#reload-btn');
+                        
+                        // ページ更新ボタン
+                        if (reloadBtn) {
+                            reloadBtn.addEventListener('click', function() {
+                                window.location.reload();
+                            });
+                        }
+                        
+                        // エラー表示を一定時間後に消す（ログダウンロード用に時間を延長）
+                        setTimeout(() => {
+                            document.body.removeChild(notification);
+                        }, 30000); // 30秒に延長
+                    }
+                }
+            });
+            
+            // ファイル選択ダイアログを表示
+            document.body.appendChild(fileInput);
+            fileInput.click();
+            
+            // イベントハンドラが実行された後にDOM要素を削除
+            setTimeout(() => {
+                document.body.removeChild(fileInput);
+            }, 1000);
+        });
+        
+        // ヘッダーの新しいボタン用イベントリスナー
+        // 一括ダウンロードボタン
+        batchDownloadBtn.addEventListener('click', function() {
+            // 選択されている文書がなければ通知
+            if (pageItems.length === 0) {
+                alert('ダウンロードできる文書がありません。');
+                return;
+            }
+            
+            // 一括ダウンロード処理
+            // 1. ダウンロード確認ダイアログを表示
+            const downloadConfirmation = document.createElement('div');
+            downloadConfirmation.classList.add('processing-notification');
+            downloadConfirmation.innerHTML = `
+                <div style="margin-right: 15px;">
+                    <i class="fas fa-download" style="font-size: 24px; color: #3389ca;"></i>
+                </div>
+                <div style="flex: 1;">
+                    <div class="processing-text">一括ダウンロードしますか？</div>
+                    <div style="font-size: 12px; color: #6b7280; margin-top: 5px;">
+                        全部で ${pageItems.length} 件のファイルがダウンロードされます。
+                    </div>
+                    <div class="notification-actions" style="display: flex; margin-top: 8px; gap: 10px;">
+                        <button id="cancel-download-btn" class="notification-action-button">
+                            キャンセル
+                        </button>
+                        <button id="confirm-download-btn" class="notification-action-button" style="background-color: #3389ca; color: white;">
+                            ダウンロード
+                        </button>
+                    </div>
+                </div>
+                <div style="margin-left: 10px; cursor: pointer;" id="close-notification-btn">
+                    <i class="fas fa-times"></i>
+                </div>
+            `;
+            
+            document.body.appendChild(downloadConfirmation);
+            
+            // 閉じるボタンのイベントリスナー
+            document.getElementById('close-notification-btn').addEventListener('click', function() {
+                document.body.removeChild(downloadConfirmation);
+            });
+            
+            // キャンセルボタンのイベントリスナー
+            document.getElementById('cancel-download-btn').addEventListener('click', function() {
+                document.body.removeChild(downloadConfirmation);
+            });
+            
+            // 確認ボタンのイベントリスナー
+            document.getElementById('confirm-download-btn').addEventListener('click', async function() {
+                // ダイアログを閉じる
+                document.body.removeChild(downloadConfirmation);
+                
+                // ダウンロード処理中の通知を表示
+                const progressNotification = document.createElement('div');
+                progressNotification.classList.add('processing-notification');
+                progressNotification.innerHTML = `
+                    <div class="processing-text">ファイルを準備しています...</div>
+                `;
+                document.body.appendChild(progressNotification);
+                
+                try {
+                    // 実際のダウンロード処理を実装（例: ZIP作成APIを呼び出す）
+                    // 本実装ではダウンロードAPIの呼び出しをシミュレート
+                    setTimeout(() => {
+                        document.body.removeChild(progressNotification);
+                        
+                        // 成功通知
+                        const successNotification = document.createElement('div');
+                        successNotification.classList.add('processing-notification');
+                        successNotification.innerHTML = `
+                            <div style="margin-right: 15px;">
+                                <i class="fas fa-check-circle" style="font-size: 24px; color: #10b981;"></i>
+                            </div>
+                            <div class="processing-text">
+                                ファイルの準備が完了しました。ダウンロードを開始します。
+                            </div>
+                        `;
+                        document.body.appendChild(successNotification);
+                        
+                        // 3秒後に通知を閉じる
+                        setTimeout(() => {
+                            document.body.removeChild(successNotification);
+                        }, 3000);
+                        
+                        // 一括ダウンロード処理の実行
+                        // サーバーにリクエストを送信
+                        const filepaths = pageItems.map(item => item.filepath);
+                        
+                        fetch('/api/data-structuring/batch-download', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ filepaths: filepaths })
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('ダウンロード処理に失敗しました');
+                            }
+                            return response.blob();
+                        })
+                        .then(blob => {
+                            // BlobをダウンロードするためのURLを作成
+                            const url = window.URL.createObjectURL(blob);
+                            
+                            // ダウンロードリンクを作成して自動的にクリック
+                            const a = document.createElement('a');
+                            a.style.display = 'none';
+                            a.href = url;
+                            
+                            // 日本時間で年月日時分を取得してファイル名に設定
+                            const now = new Date();
+                            const year = now.getFullYear();
+                            const month = String(now.getMonth() + 1).padStart(2, '0');
+                            const day = String(now.getDate()).padStart(2, '0');
+                            const hour = String(now.getHours()).padStart(2, '0');
+                            const minute = String(now.getMinutes()).padStart(2, '0');
+                            
+                            // ファイル名（サーバー側で設定されたファイル名が使われる）
+                            a.download = `documents_${year}${month}${day}_${hour}${minute}.zip`;
+                            
+                            document.body.appendChild(a);
+                            a.click();
+                            
+                            // リソースの解放
+                            window.URL.revokeObjectURL(url);
+                            document.body.removeChild(a);
+                            
+                            console.log("一括ダウンロード処理が実行されました");
+                        })
+                        .catch(error => {
+                            console.error('一括ダウンロードエラー:', error);
+                            
+                            // エラー通知
+                            const errorNotification = document.createElement('div');
+                            errorNotification.classList.add('processing-notification', 'error');
+                            errorNotification.innerHTML = `
+                                <div style="margin-right: 15px;">
+                                    <i class="fas fa-exclamation-circle" style="font-size: 24px; color: #ef4444;"></i>
+                                </div>
+                                <div class="processing-text">
+                                    ダウンロード処理中にエラーが発生しました: ${error.message}
+                                </div>
+                            `;
+                            document.body.appendChild(errorNotification);
+                            
+                            // 3秒後に通知を閉じる
+                            setTimeout(() => {
+                                document.body.removeChild(errorNotification);
+                            }, 5000);
+                        });
+                    }, 1500);
+                } catch (error) {
+                    console.error('一括ダウンロードエラー:', error);
+                    document.body.removeChild(progressNotification);
+                    
+                    // エラー通知
+                    const errorNotification = document.createElement('div');
+                    errorNotification.classList.add('processing-notification', 'error');
+                    errorNotification.innerHTML = `
+                        <div style="margin-right: 15px;">
+                            <i class="fas fa-exclamation-circle" style="font-size: 24px; color: #ef4444;"></i>
+                        </div>
+                        <div class="processing-text">
+                            ダウンロード処理中にエラーが発生しました。
+                        </div>
+                    `;
+                    document.body.appendChild(errorNotification);
+                    
+                    // 3秒後に通知を閉じる
+                    setTimeout(() => {
+                        document.body.removeChild(errorNotification);
+                    }, 3000);
+                }
+            });
+        });
+        
+        // 設定ボタン
+        settingsBtn.addEventListener('click', function() {
+            // 設定モーダルを作成（フルスクリーンサイズ）
+            const settingsModal = document.createElement('div');
+            settingsModal.style.position = 'fixed';
+            settingsModal.style.top = '0';
+            settingsModal.style.left = '0';
+            settingsModal.style.width = '100%';
+            settingsModal.style.height = '100%';
+            settingsModal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            settingsModal.style.display = 'flex';
+            settingsModal.style.justifyContent = 'center';
+            settingsModal.style.alignItems = 'center';
+            settingsModal.style.zIndex = '1000';
+            
+            // 現在のプロンプトのデフォルト値を取得（localStorage から、なければデフォルト値を使用）
+            const defaultPrompt = `あなたは「# 参照ドキュメント」の内容を完璧に理解している物知りな社員です。
+社内の手続きや規則について同僚からの質問に回答します。以下の指示に厳密に従ってください。
+
+最優先指示
+簡潔さを最優先: 特に指定がない限り、常に簡潔な回答を優先し、詳細な説明は避けてください
+マニュアル参照を促進: 標準的な手続きについては詳細なステップを列挙せず、適切なマニュアルを参照するよう促してください
+特定の質問への厳密な回答粒度について（類似度85%以上の場合）
+以下の質問に非常に類似した質問を受けた場合は、適切なマニュアルを参照して必ず指定された簡潔さの粒度で回答を提供してください：
+
+{回答粒度調整学習データセットはここへ貼り付け}
+
+前提事項
+まずは以下のjsonl形式の例示を読み込んでください。
+
+────────────────────────
+【jsonl形式の例示】
+{回答誤りパターン学習データセットはここへ貼り付け}
+
+────────────────────────
+【指示】
+以降の質問に対しては、上記【jsonl形式の例示】に示した以下のポイントを踏まえて回答してください：
+・例外対応（特に代理店のインプット誤りなど、契約者に非がない場合の柔軟な対応）
+・情報抽出の正確さと、必要な記載事項の網羅（証券分割、署名・記名・押印の要否、手続き方法の分岐点）
+・具体的かつ簡潔な回答記述
+
+────────────────────────
+
+※非常に重要※
+上記のjsonl形式の例示を参考に、以降の【質問】に対して適切な回答を生成してください。
+
+────────────────────────
+
+参照ドキュメントの使用ルール
+参照ドキュメントの情報のみを使用して回答してください。
+参照ドキュメントに関連情報が「一部でも」含まれている場合は、その情報を基に回答を構築してください。
+参照ドキュメントに質問に関する情報が全く存在しない場合にのみ「要求された情報は取得した参照ドキュメントにありません。別の質問を試してください。」と回答してください。
+回答の作成方法
+参照ドキュメントから関連する情報を見つけたら:
+
+明確かつ簡潔に情報を要約して回答します
+各文の末尾に引用元を [doc0]、[doc1] のように表記します
+複数の参照ドキュメントを適切に組み合わせて包括的な回答を提供します
+質問に直接関係する部分に焦点を当てて回答します
+参照ドキュメントから一部の情報しか見つからない場合:
+
+見つかった情報を使って可能な限り回答を提供します
+「参照ドキュメントには○○についての情報のみ含まれています」と断りを入れます
+決して「回答できない」と判断せず、部分的な情報でも共有します
+参照ドキュメントに全く情報がない場合のみ:
+
+「要求された情報は取得した参照ドキュメントにありません。別の質問を試してください。」と回答します
+重要事項
+参照ドキュメントに関連するキーワードや概念が少しでも含まれている場合は回答を試みてください
+自分の知識ではなく、必ず参照ドキュメントの情報のみを使用してください
+質問の意図を広く解釈し、関連しそうな情報があれば積極的に提供してください`;
+            
+            // localStorageから取得（なければデフォルト）
+            const currentPrompt = localStorage.getItem('dsPromptTemplate') || defaultPrompt;
+            
+            console.log('設定モーダル初期化 - 現在のプロンプト:', currentPrompt);
+            
+            // モーダルコンテンツ（フルスクリーンサイズのモーダル）
+            settingsModal.innerHTML = `
+                <div style="background-color: white; border-radius: 8px; width: 90%; height: 90%; padding: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; overflow: hidden;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="margin: 0; font-size: 1.5rem;">設定</h2>
+                        <button id="close-settings-btn" style="background: none; border: none; cursor: pointer; font-size: 1.25rem;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div style="display: flex; flex: 1; overflow: hidden; gap: 20px;">
+                        <!-- 左側のコンテンツエリア -->
+                        <div style="flex: 2; display: flex; flex-direction: column; overflow: hidden;">
+                            <div style="margin-bottom: 20px; flex: 1; display: flex; flex-direction: column;">
+                                <h3 style="font-size: 1.1rem; margin-bottom: 10px;">システムプロンプト</h3>
+                                <p style="margin-bottom: 10px; font-size: 0.9rem; color: #6b7280;">AzureOpenAIチャットで使用するシステムプロンプトを設定できます</p>
+                                <textarea id="prompt-template" style="flex: 1; padding: 10px; border: 1px solid #d1d5db; border-radius: 4px; resize: none; font-family: inherit;"></textarea>
+                            </div>
+                            
+                            <div style="margin-bottom: 20px; flex: 0 0 120px;">
+                                <h3 style="font-size: 1.1rem; margin-bottom: 10px;">シノニムセクション</h3>
+                                <p style="margin-bottom: 10px; font-size: 0.9rem; color: #6b7280;">検索向けシノニム設定（表示のみ）</p>
+                                <textarea id="synonyms-area" style="width: 100%; height: 80px; padding: 10px; border: 1px solid #d1d5db; border-radius: 4px; resize: none; font-family: inherit;" placeholder="クラウド:cloud,クラウド・コンピューティング&#10;AI:人工知能,artificial intelligence&#10;※現在表示のみで機能していません" readonly></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- 右側の設定エリア -->
+                        <div style="flex: 1; display: flex; flex-direction: column;">
+                            <div style="margin-bottom: 20px;">
+                                <h3 style="font-size: 1.1rem; margin-bottom: 10px;">表示設定</h3>
+                                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                                    <input type="checkbox" id="dark-mode-toggle" style="margin-right: 10px;">
+                                    <label for="dark-mode-toggle">ダークモード</label>
+                                </div>
+                                <div style="display: flex; align-items: center;">
+                                    <label for="font-size-slider" style="margin-right: 10px; min-width: 100px;">文字サイズ:</label>
+                                    <input type="range" id="font-size-slider" min="12" max="20" value="16" style="flex: 1;">
+                                    <span id="font-size-value" style="margin-left: 10px; min-width: 30px;">16px</span>
+                                </div>
+                            </div>
+                            
+                            <div style="margin-bottom: 20px;">
+                                <h3 style="font-size: 1.1rem; margin-bottom: 10px;">APIキー設定</h3>
+                                <div style="margin-bottom: 15px;">
+                                    <label for="azure-api-key" style="display: block; margin-bottom: 5px;">Azure API Key:</label>
+                                    <input type="password" id="azure-api-key" placeholder="APIキーを入力" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                                </div>
+                            </div>
+                            
+                            <div style="margin-bottom: 20px;">
+                                <h3 style="font-size: 1.1rem; margin-bottom: 15px;">ログ</h3>
+                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <a href="/api/data-structuring/logs" target="_blank" style="text-decoration: none; color: #3389ca; display: flex; align-items: center; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                                        <i class="far fa-file-alt" style="margin-right: 10px;"></i>システムログをダウンロード
+                                    </a>
+                                    <a href="/api/data-structuring/debug-logs" target="_blank" style="text-decoration: none; color: #3389ca; display: flex; align-items: center; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                                        <i class="fas fa-bug" style="margin-right: 10px;"></i>デバッグログをダウンロード
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <div style="margin-top: auto; text-align: right;">
+                                <button id="save-settings-btn" style="background-color: #3389ca; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                                    保存
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(settingsModal);
+            
+            // 閉じるボタンのイベントリスナー
+            document.getElementById('close-settings-btn').addEventListener('click', function() {
+                document.body.removeChild(settingsModal);
+            });
+            
+            // フォントサイズスライダーのイベントリスナー
+            const fontSizeSlider = document.getElementById('font-size-slider');
+            const fontSizeValue = document.getElementById('font-size-value');
+            
+            fontSizeSlider.addEventListener('input', function() {
+                fontSizeValue.textContent = this.value + 'px';
+            });
+            
+            // 保存ボタンのイベントリスナー
+            document.getElementById('save-settings-btn').addEventListener('click', function() {
+                // 設定値を取得
+                const darkMode = document.getElementById('dark-mode-toggle').checked;
+                const fontSize = document.getElementById('font-size-slider').value;
+                const apiKey = document.getElementById('azure-api-key').value;
+                const promptTemplate = document.getElementById('prompt-template').value;
+                
+                // デバッグ: プロンプトテンプレートの内容を詳細に記録
+                console.log('【設定保存】プロンプトテンプレート保存内容:');
+                console.log(promptTemplate);
+                console.log('【設定保存】プロンプトテンプレート長:', promptTemplate.length);
+                
+                // 箇条書き指定の有無をチェック
+                const hasBulletPoints = promptTemplate.includes('箇条書き');
+                const hasStarBullets = promptTemplate.includes('★') && hasBulletPoints;
+                const hasNumberedBullets = promptTemplate.includes('数字') && hasBulletPoints;
+                
+                console.log('【設定保存】箇条書き指定あり:', hasBulletPoints);
+                console.log('【設定保存】★箇条書き指定:', hasStarBullets);
+                console.log('【設定保存】数字箇条書き指定:', hasNumberedBullets);
+                
+                // 設定を保存（localStorage使用）
+                localStorage.setItem('darkMode', darkMode);
+                localStorage.setItem('fontSize', fontSize);
+                
+                // プロンプトテンプレートが空の場合はデフォルト値を設定
+                if (!promptTemplate || promptTemplate.trim() === '') {
+                    promptTemplate = defaultPrompt;
+                    console.log('空のプロンプトテンプレートを検出したため、デフォルト値を設定しました');
+                }
+                
+                localStorage.setItem('dsPromptTemplate', promptTemplate);
+                console.log('==================== 設定保存ログ ====================');
+                console.log('設定保存中 - プロンプトテンプレート:', promptTemplate);
+                console.log('設定保存中 - プロンプトテンプレート長:', promptTemplate.length);
+                
+                // 保存された値を検証
+                const savedTemplate = localStorage.getItem('dsPromptTemplate');
+                console.log('検証 - 保存されたプロンプトテンプレート:', savedTemplate);
+                console.log('検証 - 保存されたテンプレート長:', savedTemplate ? savedTemplate.length : 0);
+                console.log('==================== 設定保存ログ終了 ====================');
+                if (apiKey) {
+                    localStorage.setItem('azureApiKey', apiKey);
+                }
+                
+                // 通知を表示
+                const notification = document.createElement('div');
+                notification.classList.add('processing-notification');
+                notification.innerHTML = `
+                    <div style="margin-right: 15px;">
+                        <i class="fas fa-check-circle" style="font-size: 24px; color: #10b981;"></i>
+                    </div>
+                    <div class="processing-text">
+                        設定が保存されました。
+                    </div>
+                `;
+                document.body.appendChild(notification);
+                
+                // 設定モーダルを閉じる
+                document.body.removeChild(settingsModal);
+                
+                // 3秒後に通知を閉じる
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 3000);
+                
+                // プロンプト設定が変更されたことをコンソールに表示
+                console.log('プロンプトテンプレートが更新されました:', promptTemplate);
+                
+                // デバッグ確認用 - プロンプトテンプレートの保存状態を検証
+                setTimeout(() => {
+                    const savedTemplate = localStorage.getItem('dsPromptTemplate');
+                    console.log('保存されたプロンプトテンプレート:', savedTemplate);
+                    console.log('保存されたテンプレート長:', savedTemplate ? savedTemplate.length : 0);
+                }, 500);
+                
+                // 設定の適用（フォントサイズのみ即時反映）
+                document.documentElement.style.setProperty('--font-size-base', fontSize + 'px');
+                
+                // ダークモードの適用
+                if (darkMode) {
+                    document.documentElement.classList.add('dark-mode');
+                } else {
+                    document.documentElement.classList.remove('dark-mode');
+                }
+            });
+            
+            // 設定値の初期化（保存されている値があれば読み込む）
+            const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+            const savedFontSize = localStorage.getItem('fontSize') || '16';
+            const savedApiKey = localStorage.getItem('azureApiKey') || '';
+            let savedPromptTemplate = localStorage.getItem('dsPromptTemplate') || '';
+            
+            console.log('モーダル初期化時：保存されたプロンプトテンプレート:', savedPromptTemplate);
+            
+            // もし保存されたテンプレートが空の場合はデフォルト値を設定
+            if (!savedPromptTemplate || savedPromptTemplate.trim() === '') {
+                savedPromptTemplate = `あなたは「# 参照ドキュメント」の内容を完璧に理解している物知りな社員です。
+社内の手続きや規則について同僚からの質問に回答します。以下の指示に厳密に従ってください。
+
+最優先指示
+簡潔さを最優先: 特に指定がない限り、常に簡潔な回答を優先し、詳細な説明は避けてください
+マニュアル参照を促進: 標準的な手続きについては詳細なステップを列挙せず、適切なマニュアルを参照するよう促してください
+特定の質問への厳密な回答粒度について（類似度85%以上の場合）
+以下の質問に非常に類似した質問を受けた場合は、適切なマニュアルを参照して必ず指定された簡潔さの粒度で回答を提供してください：
+
+{回答粒度調整学習データセットはここへ貼り付け}
+
+前提事項
+まずは以下のjsonl形式の例示を読み込んでください。
+
+────────────────────────
+【jsonl形式の例示】
+{回答誤りパターン学習データセットはここへ貼り付け}
+
+────────────────────────
+【指示】
+以降の質問に対しては、上記【jsonl形式の例示】に示した以下のポイントを踏まえて回答してください：
+・例外対応（特に代理店のインプット誤りなど、契約者に非がない場合の柔軟な対応）
+・情報抽出の正確さと、必要な記載事項の網羅（証券分割、署名・記名・押印の要否、手続き方法の分岐点）
+・具体的かつ簡潔な回答記述
+
+────────────────────────
+
+※非常に重要※
+上記のjsonl形式の例示を参考に、以降の【質問】に対して適切な回答を生成してください。
+
+────────────────────────
+
+参照ドキュメントの使用ルール
+参照ドキュメントの情報のみを使用して回答してください。
+参照ドキュメントに関連情報が「一部でも」含まれている場合は、その情報を基に回答を構築してください。
+参照ドキュメントに質問に関する情報が全く存在しない場合にのみ「要求された情報は取得した参照ドキュメントにありません。別の質問を試してください。」と回答してください。
+回答の作成方法
+参照ドキュメントから関連する情報を見つけたら:
+
+明確かつ簡潔に情報を要約して回答します
+各文の末尾に引用元を [doc0]、[doc1] のように表記します
+複数の参照ドキュメントを適切に組み合わせて包括的な回答を提供します
+質問に直接関係する部分に焦点を当てて回答します
+参照ドキュメントから一部の情報しか見つからない場合:
+
+見つかった情報を使って可能な限り回答を提供します
+「参照ドキュメントには○○についての情報のみ含まれています」と断りを入れます
+決して「回答できない」と判断せず、部分的な情報でも共有します
+参照ドキュメントに全く情報がない場合のみ:
+
+「要求された情報は取得した参照ドキュメントにありません。別の質問を試してください。」と回答します
+重要事項
+参照ドキュメントに関連するキーワードや概念が少しでも含まれている場合は回答を試みてください
+自分の知識ではなく、必ず参照ドキュメントの情報のみを使用してください
+質問の意図を広く解釈し、関連しそうな情報があれば積極的に提供してください`;
+                console.log('デフォルトのプロンプトテンプレートを設定しました');
+            }
+            
+            document.getElementById('dark-mode-toggle').checked = savedDarkMode;
+            document.getElementById('font-size-slider').value = savedFontSize;
+            document.getElementById('font-size-value').textContent = savedFontSize + 'px';
+            document.getElementById('azure-api-key').value = savedApiKey;
+            
+            // 確実にテンプレートが設定されるようにsetTimeoutを使用
+            setTimeout(() => {
+                const promptTemplateElement = document.getElementById('prompt-template');
+                if (promptTemplateElement) {
+                    promptTemplateElement.value = savedPromptTemplate;
+                    console.log('プロンプトテンプレートを設定しました:', promptTemplateElement.value.substring(0, 50) + '...');
+                }
+            }, 100);
+        });
+        
+        // アカウントアイコンのクリックイベント
+        accountIcon.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const dropdown = document.getElementById('account-dropdown');
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+            
+            // ドロップダウンが表示されたときにログアウトリンクにイベントリスナーを追加
+            if (dropdown.style.display === 'block') {
+                const logoutLink = dropdown.querySelector('a');
+                if (logoutLink) {
+                    // 既存のイベントリスナーを削除（重複防止）
+                    logoutLink.removeEventListener('click', logout);
+                    // 新しいイベントリスナーを追加
+                    logoutLink.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        return logout();
+                    });
+                }
+            }
+        });
+        
+        // ドキュメント上の任意の場所をクリックしたときにドロップダウンを閉じる
+        document.addEventListener('click', function() {
+            const dropdown = document.getElementById('account-dropdown');
+            if (dropdown && dropdown.style.display === 'block') {
+                dropdown.style.display = 'none';
+            }
+        });
+        
+        // ダウンロードボタン
+        downloadBtn.addEventListener('click', function() {
+            if (selectedDocument) {
+                // テキストコンテンツの取得
+                const content = selectedDocument.content;
+                
+                // Blobオブジェクトの作成
+                const blob = new Blob([content], { type: 'text/plain' });
+                
+                // ダウンロードリンクの作成
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = selectedDocument.name;
+                
+                // リンクを非表示でDOMに追加
+                document.body.appendChild(link);
+                
+                // ダウンロードをトリガー
+                link.click();
+                
+                // 不要になったリソースの解放
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }, 100);
+            } else {
+                alert('ダウンロードするドキュメントを選択してください。');
+            }
+        });
+        
+        // リサイザー
+        let isLeftResizing = false;
+        let isRightResizing = false;
+        
+        // リサイザーの高さをコンテンツエリアの高さに合わせる関数
+        function updateResizerHeights() {
+            const contentHeight = document.querySelector('.content-area').scrollHeight;
+            const leftSidebarHeight = Math.max(leftSidebar.scrollHeight, contentHeight);
+            const rightSidebarHeight = Math.max(rightSidebar.scrollHeight, contentHeight);
+            
+            // 左リサイザーの高さを設定
+            leftResizer.style.height = leftSidebarHeight + 'px';
+            // 右リサイザーの高さを設定
+            rightResizer.style.height = rightSidebarHeight + 'px';
+        }
+        
+        // 初期表示時とウィンドウリサイズ時に高さを更新
+        updateResizerHeights();
+        window.addEventListener('resize', updateResizerHeights);
+        
+        // ドキュメント読み込み時にリサイザーの高さを更新
+        document.querySelector('.document-content').addEventListener('scroll', updateResizerHeights);
+        
+        leftResizer.addEventListener('mousedown', function(e) {
+            isLeftResizing = true;
+            e.preventDefault();
+        });
+        
+        rightResizer.addEventListener('mousedown', function(e) {
+            isRightResizing = true;
+            e.preventDefault();
+        });
+        
+        document.addEventListener('mousemove', function(e) {
+            if (isLeftResizing) {
+                const newWidth = e.clientX;
+                if (newWidth > 150 && newWidth < 500) {
+                    leftSidebar.style.width = newWidth + 'px';
+                }
+            }
+            
+            if (isRightResizing) {
+                const containerWidth = document.body.clientWidth;
+                const newWidth = containerWidth - e.clientX;
+                if (newWidth > 250) {
+                    rightSidebar.style.width = newWidth + 'px';
+                }
+            }
+            
+            // リサイズ中も高さを更新
+            if (isLeftResizing || isRightResizing) {
+                updateResizerHeights();
+            }
+        });
+        
+        document.addEventListener('mouseup', function() {
+            isLeftResizing = false;
+            isRightResizing = false;
+        });
+    }
+
+    // 初期化実行
+    initUI();
+});
+</script>
+</body>
+</html>

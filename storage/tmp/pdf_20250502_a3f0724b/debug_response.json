@@ -1,0 +1,52 @@
+{
+  "status_code": 200,
+  "headers": {
+    "Transfer-Encoding": "chunked",
+    "Content-Type": "application/json; odata.metadata=minimal; odata.streaming=true; charset=utf-8",
+    "Content-Encoding": "gzip",
+    "Vary": "Accept-Encoding",
+    "Server": "Microsoft-IIS/10.0",
+    "Strict-Transport-Security": "max-age=2592000, max-age=15724800; includeSubDomains",
+    "Preference-Applied": "odata.include-annotations=\"*\"",
+    "OData-Version": "4.0",
+    "request-id": "029a91a2-c603-419d-9c33-f50e59074aa4",
+    "elapsed-time": "65",
+    "Date": "Fri, 02 May 2025 00:55:05 GMT"
+  },
+  "timestamp": "2025-05-02T00:55:06.515547",
+  "body": {
+    "@odata.context": "https://iluragsearch.search.windows.net/indexes('mspseimei-sentence')/$metadata#Collection(Microsoft.Azure.Search.V2020_06_30.IndexResult)",
+    "value": [
+      {
+        "key": "doc_20250502005504_d3ba4426_s0",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      },
+      {
+        "key": "doc_20250502005504_d3ba4426_s1",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      },
+      {
+        "key": "doc_20250502005504_d3ba4426_s2",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      },
+      {
+        "key": "doc_20250502005504_d3ba4426_s3",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      },
+      {
+        "key": "doc_20250502005504_d3ba4426_s4",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      }
+    ]
+  }
+}

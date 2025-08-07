@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- デプロイ向け：警告を抑制 -->
+    <NoWarn>CS8600;CS8601;CS8602;CS8603;CS8604;CS8618;CS8619;CS8620;CS8625;CS1998</NoWarn>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- デプロイ最適化 -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <OptimizationLevel>speed</OptimizationLevel>
+    <!-- デプロイ時のAOT最適化を無効化（起動を早くするため） -->
+    <PublishAot>false</PublishAot>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <!-- Windows互換性を無効化 -->
+    <UseAppHost>false</UseAppHost>
+    <UseWindowsCompatibilityPack>false</UseWindowsCompatibilityPack>
+  </PropertyGroup>
+  
+  <!-- バックアップディレクトリを除外 -->
+  <ItemGroup>
+    <Compile Remove="backups\**" />
+    <Content Remove="backups\**" />
+    <EmbeddedResource Remove="backups\**" />
+    <None Remove="backups\**" />
+  </ItemGroup>
+
+  <!-- デプロイビルド向け設定 -->
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <Optimize>true</Optimize>
+    <!-- 警告レベルを最低に設定 -->
+    <WarningLevel>0</WarningLevel>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Anthropic" Version="3.4.1" />
+    <PackageReference Include="Azure.AI.OpenAI" Version="1.0.0-beta.14" />
+    <PackageReference Include="Azure.Search.Documents" Version="11.5.1" />
+    <PackageReference Include="DotNetZip" Version="1.16.0" />
+    <PackageReference Include="itext7" Version="9.1.0" />
+    <PackageReference Include="itext7.bouncy-castle-adapter" Version="9.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="System.IO.Abstractions" Version="22.0.13" />
+    <PackageReference Include="System.Linq.Async" Version="6.0.1" />
+    <PackageReference Include="AWSSDK.ElasticLoadBalancingV2" Version="3.7.400.44" />
+    <PackageReference Include="AWSSDK.Core" Version="3.7.400.44" />
+    <PackageReference Include="AWSSDK.BedrockRuntime" Version="3.7.400.44" />
+  </ItemGroup>
+
+</Project>

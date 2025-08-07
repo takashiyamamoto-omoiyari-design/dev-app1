@@ -1,0 +1,21 @@
+{
+  "timestamp": "2025-05-02T00:55:05.885940",
+  "python_version": "3.11.10 (main, Sep  7 2024, 01:03:31) [GCC 13.3.0]",
+  "sentence_document": {
+    "@search.action": "upload",
+    "id": "doc_20250502005504_d3ba4426_s0",
+    "sentence": "# 23．",
+    "chunk_id": 0,
+    "filepath": "/home/runner/workspace/storage/tmp/pdf_20250502_a3f0724b/経理QA2024.3Q（実績）-page-30.txt"
+  },
+  "main_document": {
+    "id": "doc_20250502005504_d3ba4426",
+    "content": "# 23．海外子会社利益の為替影響を教えてほしい。（前期比、計画比）\n\n## 回答\n- 当期為替レートと前年為替レートの差による影響は、約100億円。\n- 当期為替レート（実績）と計画為替レートの差による影響は、ほぼない。（▲4億円）\n\n|              | 前期レート差(※1) | 計画レート差(※2) |\n|--------------|--------------------|----------------------|\n| 海外子会社利益影響  | +98億円             | ▲4億円               |\n| のれん等償却費影響  | ▲18億円            | ▲0億円               |\n| 当期純利益影響      | +79億円             | ▲4億円               |\n\n(※1) 当年度外貨額に「当期レート －（前期レート）」を乗じて算出  \n(※2) 当年度外貨額に「当期レート －（3Q計画レート）」を乗じて算出\n\n---\n\n30 / 30",
+    "filepath": "/home/runner/workspace/storage/tmp/pdf_20250502_a3f0724b/経理QA2024.3Q（実績）-page-30.txt"
+  },
+  "environment_info": {
+    "AZURE_SEARCH_API_VERSION": "2020-06-30",
+    "working_dir": "/home/runner/workspace",
+    "platform": "linux"
+  }
+}

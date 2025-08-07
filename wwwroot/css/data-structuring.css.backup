@@ -1,0 +1,467 @@
+/* データ構造化ソリューション用スタイル */
+.data-structuring-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 40px); /* サイドバーの高さを考慮 */
+  overflow: hidden;
+}
+
+/* ヘッダースタイル */
+.ds-header {
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  z-index: 10;
+}
+
+.header-logo {
+  display: flex;
+  align-items: center;
+}
+
+/* ヘッダータイトル（別途末尾で上書き設定あり） */
+.header-title {
+  margin-left: 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+/* メインコンテナスタイル */
+.main-container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 左サイドバー */
+.left-sidebar {
+  width: 240px;
+  background-color: white;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow-y: auto;
+  height: 100%; /* 高さを100%に設定 */
+}
+
+.left-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  min-height: 100%;
+  background-color: #e5e7eb;
+  cursor: ew-resize;
+  z-index: 10;
+}
+
+.upload-btn {
+  margin: 1rem;
+  background-color: #3b82f6;
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+}
+
+.page-list-header {
+  padding: 0 1rem;
+  margin-top: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.page-list {
+  margin-top: 0.5rem;
+  padding: 0 1rem;
+}
+
+.page-item {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.25rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+.page-item.active {
+  background-color: #eff6ff;
+}
+
+.page-item.active .file-icon {
+  color: #3b82f6;
+}
+
+.page-item.active .page-name {
+  color: #1d4ed8;
+  font-weight: 500;
+}
+
+/* ハイライト表示されたファイル */
+.page-item.highlighted {
+  background-color: #fef3c7; /* 淡い黄色 */
+  animation: highlight-pulse 2s ease-in-out;
+}
+
+@keyframes highlight-pulse {
+  0% { background-color: #fef3c7; }
+  50% { background-color: #fde68a; }
+  100% { background-color: #fef3c7; }
+}
+
+/* コンテンツエリア */
+.content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.content-toolbar {
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.download-btn {
+  background-color: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.chat-btn {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+}
+
+.document-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 5px;
+  background-color: #f9fafb; /* 薄いグレーの背景 */
+}
+
+.document-inner {
+  width: 100%;
+  margin: 0 auto;
+  padding: 5px;
+  background-color: #fff;  /* 白背景の追加 */
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.document-page {
+  display: none;
+}
+
+.document-page.active {
+  display: block;
+}
+
+/* 右サイドバー（チャット） */
+.right-sidebar {
+  width: 320px;
+  background-color: white;
+  border-left: 1px solid #e5e7eb;
+  display: none;
+  flex-direction: column;
+  position: relative;
+  height: 100%; /* 高さを100%に設定 */
+}
+
+.right-sidebar.open {
+  display: flex;
+}
+
+.right-resizer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  min-height: 100%;
+  background-color: #e5e7eb;
+  cursor: ew-resize;
+  z-index: 10;
+}
+
+.chat-header {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 1.25rem;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.chat-message {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.chat-message.user {
+  justify-content: flex-end;
+}
+
+.avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  color: white;
+  margin-right: 0.75rem;
+}
+
+.chat-message.user .avatar {
+  margin-right: 0;
+  margin-left: 0.75rem;
+  background-color: #9ca3af;
+}
+
+.system-avatar {
+  background-color: #3b82f6;
+}
+
+.message-bubble {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  max-width: 80%;
+}
+
+.system-bubble {
+  background-color: #f3f4f6;
+}
+
+.user-bubble {
+  background-color: #dbeafe;
+}
+
+.source-section {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.source-link {
+  display: flex;
+  align-items: center;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #2563eb;
+  cursor: pointer;
+}
+
+.source-link:hover {
+  text-decoration: underline;
+}
+
+.chat-input-container {
+  padding: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.chat-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+}
+
+.chat-input-info {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* 空の状態表示 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: #6b7280;
+  text-align: center;
+  font-size: 1rem;
+}
+
+/* ヘッダータイトルのオーバーライド - 確実に適用するため !important を使用 */
+/* ヘッダータイトル設定 - 最優先で適用 */
+.header-title {
+  margin-left: 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+/* キーワード分析ローダーのスタイル */
+.dictionary-loader {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: 60px;
+  border-radius: 30px;
+  box-shadow: 0 12px 45px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.dictionary-icon {
+  width: 240px;
+  height: 240px;
+  margin-bottom: 45px;
+  perspective: 3000px;
+  position: relative;
+}
+
+.dictionary-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.dictionary-text {
+  font-size: 1.8rem;
+  color: #4b5563;
+  margin-top: 30px;
+}
+
+/* キーワードタグのスタイル */
+.keyword-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.keyword-tag {
+  display: inline-block;
+  background-color: #e1f0ff;
+  color: #3389ca;
+  border-radius: 16px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.keyword-tag:hover {
+  background-color: #c8e3ff;
+}
+
+.keywords-title {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+/* チャットアニメーション */
+@keyframes slideInRight {
+  from { 
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to { 
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.system-bubble {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* 感情タグのスタイル */
+.emotion-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.emotion-tag {
+  display: inline-block;
+  background-color: #FFEBD7;
+  color: #E86100;
+  border-radius: 16px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.emotion-tag:hover {
+  background-color: #FFDFBF;
+}
+
+.emotions-title {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 6px;
+  font-weight: 500;
+}

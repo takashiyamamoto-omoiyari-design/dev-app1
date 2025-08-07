@@ -1,0 +1,492 @@
+    <style>
+        /* リセットCSS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.5;
+            color: #333;
+            background-color: #f9fafb;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        /* データ構造化ソリューション用スタイル */
+        .data-structuring-container {
+          display: flex;
+          flex-direction: column;
+          height: 100vh;
+          overflow: hidden;
+        }
+
+        /* ヘッダースタイル */
+        .ds-header {
+          background-color: white;
+          border-bottom: 1px solid #e5e7eb;
+          padding: 0.75rem 1rem;
+          display: flex;
+          align-items: center;
+          z-index: 10;
+        }
+
+        .header-logo {
+          display: flex;
+          align-items: center;
+        }
+
+        .header-title {
+          margin-left: 0.5rem;
+          font-size: 1.5rem !important; /* 優先度を上げるために !important を使用 */
+          font-weight: 500;
+        }
+
+        /* メインコンテナスタイル */
+        .main-container {
+          display: flex;
+          flex: 1;
+          overflow: hidden;
+        }
+
+        /* 左サイドバー */
+        .left-sidebar {
+          width: 240px;
+          background-color: white;
+          border-right: 1px solid #e5e7eb;
+          display: flex;
+          flex-direction: column;
+          position: relative;
+          overflow-y: auto;
+        }
+
+        .left-resizer {
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 4px;
+          height: 100%;
+          background-color: #e5e7eb;
+          cursor: ew-resize;
+        }
+
+        .upload-btn {
+          margin: 1rem;
+          background-color: #3389ca; /* 指定の青色に変更 */
+          color: white;
+          padding: 0.5rem 0.75rem;
+          border-radius: 0.375rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 500;
+          cursor: pointer;
+          border: none;
+        }
+
+        .page-list-header {
+          padding: 0 1rem;
+          margin-top: 1rem;
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #6b7280;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .page-list {
+          margin-top: 0.5rem;
+          padding: 0 1rem;
+        }
+
+        .page-item {
+          display: flex;
+          align-items: center;
+          padding: 0.5rem 0.75rem;
+          margin-bottom: 0.25rem;
+          border-radius: 0.375rem;
+          cursor: pointer;
+        }
+
+        .page-item.active {
+          background-color: #eff6ff;
+        }
+
+        .page-item.active .file-icon {
+          color: #3b82f6;
+        }
+
+        .page-item.active .page-name {
+          color: #1d4ed8;
+          font-weight: 500;
+        }
+
+        /* コンテンツエリア */
+        .content-area {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+
+        .content-toolbar {
+          background-color: white;
+          border-bottom: 1px solid #e5e7eb;
+          padding: 0.75rem 1.5rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .toolbar-actions {
+          display: flex;
+          gap: 0.75rem;
+        }
+
+        .toolbar-btn {
+          display: flex;
+          align-items: center;
+          padding: 0.375rem 0.75rem;
+          border-radius: 0.375rem;
+          font-size: 0.875rem;
+          font-weight: 500;
+          cursor: pointer;
+        }
+
+        .download-btn {
+          background-color: white;
+          color: #374151;
+          border: 1px solid #d1d5db;
+        }
+
+        .chat-btn {
+          background-color: #3389ca; /* 指定の青色に変更 */
+          color: white;
+          border: none;
+        }
+
+        .document-content {
+          flex: 1;
+          overflow-y: auto;
+          padding: 1.5rem;
+          background-color: #f9fafb;
+        }
+
+        .document-inner {
+          /* max-width: 48rem; */
+          margin: 0 auto;
+          background-color: white;
+          padding: 2rem;
+          border-radius: 0.5rem;
+          box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+
+        .document-page {
+          display: none;
+        }
+
+        .document-page.active {
+          display: block;
+        }
+
+        /* 右サイドバー（チャット） */
+        .right-sidebar {
+          width: 320px;
+          background-color: white;
+          border-left: 1px solid #e5e7eb;
+          display: none;
+          flex-direction: column;
+          position: relative;
+        }
+
+        .right-sidebar.open {
+          display: flex;
+        }
+
+        .right-resizer {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 4px;
+          height: 100%;
+          background-color: #e5e7eb;
+          cursor: ew-resize;
+        }
+
+        .chat-header {
+          padding: 0.75rem 1rem;
+          border-bottom: 1px solid #e5e7eb;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .close-btn {
+          background: none;
+          border: none;
+          color: #6b7280;
+          cursor: pointer;
+          font-size: 1.25rem;
+        }
+
+        .chat-messages {
+          flex: 1;
+          overflow-y: auto;
+          padding: 1rem;
+        }
+
+        .chat-message {
+          display: flex;
+          align-items: flex-start;
+          margin-bottom: 1rem;
+        }
+
+        .chat-message.user {
+          justify-content: flex-end;
+        }
+
+        .avatar {
+          width: 2rem;
+          height: 2rem;
+          border-radius: 9999px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 500;
+          color: white;
+          margin-right: 0.75rem;
+        }
+
+        .chat-message.user .avatar {
+          margin-right: 0;
+          margin-left: 0.75rem;
+          background-color: #9ca3af;
+        }
+
+        .system-avatar {
+          background-color: #3389ca; /* 指定の青色に変更 */
+        }
+
+        .message-bubble {
+          padding: 0.75rem;
+          border-radius: 0.5rem;
+          max-width: 80%;
+          overflow-wrap: break-word;
+          word-break: break-word;
+        }
+
+        .system-bubble {
+          background-color: #f3f4f6;
+          max-height: 100%;
+          overflow: visible;
+        }
+
+        .user-bubble {
+          background-color: #dbeafe;
+        }
+
+        .source-section {
+          margin-top: 0.75rem;
+          padding-top: 0.75rem;
+          border-top: 1px solid #e5e7eb;
+        }
+
+        .source-link {
+          display: flex;
+          align-items: center;
+          margin-top: 0.25rem;
+          font-size: 0.75rem;
+          color: #3389ca; /* 指定の青色に変更 */
+          cursor: pointer;
+        }
+
+        .source-link:hover {
+          text-decoration: underline;
+        }
+        
+        .empty-message {
+          padding: 2rem 1rem;
+          text-align: center;
+          color: #6b7280;
+          font-size: 0.875rem;
+          font-style: italic;
+        }
+
+        .chat-input-container {
+          padding: 0.75rem;
+          border-top: 1px solid #e5e7eb;
+        }
+
+        .chat-input {
+          width: 100%;
+          padding: 0.5rem;
+          border: 1px solid #d1d5db;
+          border-radius: 0.375rem;
+        }
+
+        .chat-input-info {
+          margin-top: 0.5rem;
+          font-size: 0.75rem;
+          color: #6b7280;
+        }
+
+        /* 空の状態表示 */
+        .empty-state {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 300px;
+          color: #6b7280;
+          text-align: center;
+          font-size: 1rem;
+        }
+        
+        /* PDF処理通知スタイル */
+        .processing-notification {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          padding: 25px 30px;
+          background-color: white;
+          border-radius: 12px;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          z-index: 1000;
+          min-width: 500px;
+          max-width: 80%;
+          max-height: 80vh;
+          overflow: hidden;
+        }
+        
+        .processing-notification.error {
+          background-color: #fee2e2;
+          border-left: 4px solid #ef4444;
+        }
+        
+        .processing-notification .notification-actions {
+          display: flex;
+          margin-top: 8px;
+          gap: 10px;
+        }
+        
+        .processing-notification-header {
+          display: flex;
+          align-items: center;
+          width: 100%;
+          margin-bottom: 15px;
+        }
+        
+        .processing-log {
+          max-height: 300px;
+          width: 100%;
+          overflow-y: auto;
+          margin-top: 15px;
+          border-top: 1px solid #e5e7eb;
+          padding-top: 15px;
+          font-family: monospace;
+          font-size: 12px;
+          background-color: #f9fafb;
+          padding: 10px;
+          border-radius: 6px;
+          display: none;
+        }
+        
+        .log-entry {
+          margin-bottom: 5px;
+          padding-bottom: 5px;
+          border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .log-entry-new {
+          background-color: #f0f9ff;
+          animation: fadeBackground 2s forwards;
+        }
+        
+        @@keyframes fadeBackground {
+          from { background-color: #f0f9ff; }
+          to { background-color: transparent; }
+        }
+        
+        .processing-notification .notification-action-button {
+          background-color: #f3f4f6;
+          border: 1px solid #d1d5db;
+          color: #374151;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 0.75rem;
+          cursor: pointer;
+        }
+        
+        .processing-notification .notification-action-button:hover {
+          background-color: #e5e7eb;
+        }
+        
+        .processing-spinner {
+          width: 24px;
+          height: 24px;
+          border: 3px solid #e5e7eb;
+          border-radius: 50%;
+          border-top-color: #3389ca;
+          animation: spin 1s linear infinite;
+          margin-right: 15px;
+        }
+        
+        @@keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        
+        .processing-text {
+          font-size: 18px;
+          font-weight: 500;
+          color: #4b5563;
+          margin-left: 10px;
+        }
+        
+        .processing-notification.error .processing-spinner {
+          display: none;
+        }
+        
+        .processing-notification.error .processing-text {
+          color: #b91c1c;
+        }
+        
+        .recovery-button {
+          background-color: #4b5563; /* 濃いグレー */
+          color: white;
+        }
+        
+        .recovery-button:hover {
+          background-color: #374151 !important; /* さらに濃いグレー */
+        }
+        
+        .reload-button {
+          background-color: #3389ca; /* 指定の青色 */
+          color: white;
+        }
+        
+        .reload-button:hover {
+          background-color: #3389ca !important; /* 指定の青色 */
+        }
+        
+        /* タイムアウト時の表示 */
+        .processing-notification.timeout .processing-spinner {
+          display: none;
+        }
+        
+        .processing-notification.timeout .processing-text {
+          color: #f59e0b; /* オレンジ */
+        }
+    </style>

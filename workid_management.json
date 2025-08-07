@@ -1,0 +1,125 @@
+{
+  "users": {
+    "admin": {
+      "username": "admin",
+      "allowedWorkIds": ["*"],
+      "role": "Admin",
+      "lastUpdated": "2025-01-01T00:00:00Z"
+    },
+    "oec": {
+      "username": "oec",
+      "allowedWorkIds": [
+        "c606c3604c39e2ea1dbec26b63e454c5",
+        "ff3bfb43437a02fde082fdc2af4a90e8",
+        "3af5944e6d62e2c9ddcc607611e6d5ad"
+      ],
+      "role": "User",
+      "lastUpdated": "2025-01-01T00:00:00Z"
+    },
+    "valuufy": {
+      "username": "valuufy",
+      "allowedWorkIds": [
+        "ff3bfb43437a02fde082fdc2af4a90e8"
+      ],
+      "role": "User",
+      "lastUpdated": "2025-01-01T00:00:00Z"
+    },
+    "haga": {
+      "username": "haga",
+      "allowedWorkIds": [
+        "c606c3604c39e2ea1dbec26b63e454c5",
+        "963ff01134b44b8b043bb2ff660f23c",
+        "81441543964100bce1bd121651098",
+        "26c4e17beaeba50c855ca20053708c"
+      ],
+      "role": "User",
+      "lastUpdated": "2025-01-03T12:44:19Z"
+    },
+    "nakajima": {
+      "username": "nakajima",
+      "allowedWorkIds": [
+        "c606c3604c39e2ea1dbec26b63e454c5",
+        "ff3bfb43437a02fde082fdc2af4a90e8"
+      ],
+      "role": "User",
+      "lastUpdated": "2025-01-01T00:00:00Z"
+    },
+    "kawasaki": {
+      "username": "kawasaki",
+      "allowedWorkIds": [
+        "ff3bfb43437a02fde082fdc2af4a90e8"
+      ],
+      "role": "User",
+      "lastUpdated": "2025-01-01T00:00:00Z"
+    },
+    "system": {
+      "username": "system",
+      "allowedWorkIds": [],
+      "role": "Admin",
+      "lastUpdated": "2025-01-01T00:00:00Z"
+    }
+  },
+  "workIds": {
+    "c606c3604c39e2ea1dbec26b63e454c5": {
+      "name": "マイナンバー文書"
+    },
+    "ff3bfb43437a02fde082fdc2af4a90e8": {
+      "name": "Sansan決算説明書"
+    },
+    "837a341358d9737887dc2c9b89c96896": {
+      "name": "ポンチ絵を含むドキュメント-1枚"
+    },
+    "7a1b5a0d3929413e52c3b421cb979292": {
+      "name": "サンプル_4"
+    },
+    "6a52d7754ad9cd9f1d49b0943b054943": {
+      "name": "サンプル_1"
+    },
+    "529b1a4c9bd74946c1d3c2e46e9e85b5": {
+      "name": "QA集"
+    },
+    "db6e0e15e4486963c1edb593deace546": {
+      "name": "image3-940x477"
+    },
+    "85a87d7ef70f27250249a0459622ef02": {
+      "name": "image3-940x477"
+    },
+    "be3d634b74e4772182e9b2750bf8f51f": {
+      "name": "18129"
+    },
+    "5b5d88d7db6077ee03adacb2611745cc": {
+      "name": "Sansan-kessan-20250502"
+    },
+    "506b69acd9cd33466d5e8745034048e1": {
+      "name": "事前渇水行動計画（那賀川）（春渇水等）"
+    },
+    "b409e97d305b47b09809b6a0a0cb59f2": {
+      "name": "災害時連絡システムマニュアル (1)"
+    },
+    "111ef14950e512be5c41120e3eb4e3c0": {
+      "name": "QA集"
+    },
+    "1a16bd4d8759b0283e1a0e7489272926": {
+      "name": "na_vx5e6_guide"
+    },
+    "4e635b4e09c256ccd0edb0f9f02d5d7b": {
+      "name": "災害時連絡システムマニュアル (2)"
+    },
+    "808d3472596680ba202a25e495ffbc9a": {
+      "name": "取扱説明書-NA-LX125D-"
+    },
+    "3af5944e6d62e2c9ddcc607611e6d5ad": {
+      "name": "OECアップロード文書"
+    },
+    "963ff01134b44b8b043bb2ff660f23c": {
+      "name": "災害時避難システムマニュアル.pdf"
+    },
+    "81441543964100bce1bd121651098": {
+      "name": "育児休業基準.pdf"
+    },
+    "26c4e17beaeba50c855ca20053708c": {
+      "name": "QA集.pdf"
+    }
+  },
+  "lastUpdated": "2025-01-03T12:44:19Z"
+} 

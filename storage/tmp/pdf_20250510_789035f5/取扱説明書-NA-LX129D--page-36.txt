@@ -1,0 +1,83 @@
+```markdown
+# 「スマホで洗濯」アプリを使う
+
+あらかじめCLUB Panasonicの会員登録をしてから、スマートフォンに「スマホで洗濯」アプリをダウンロードして、お使いの洗濯機を登録します。
+
+## 初期設定の手順
+
+1. **[CLUB Panasonic](無料)の会員登録をする**
+
+   ![QRコード](club_panasonic_qr.png)  
+   [https://club.panasonic.jp/](https://club.panasonic.jp/)
+
+2. **「スマホで洗濯」アプリ(無料)をインストールする**
+
+   - Android (Google Play)  
+     ![QRコード](android_qr.png)  
+     [https://play.google.com/store/apps/details?id=com.panasonic.SmartLaundry](https://play.google.com/store/apps/details?id=com.panasonic.SmartLaundry)
+
+   - iOS (App Store)  
+     ![QRコード](ios_qr.png)  
+     [https://apps.apple.com/jp/app/id1450727239](https://apps.apple.com/jp/app/id1450727239)
+
+3. **アプリを起動し「CLUB Panasonic」のIDなどでログインする**
+
+   ![ログイン画面](login_image.png)
+
+4. **アプリの画面に従って洗濯機をMy家電登録する**
+
+   ![洗濯機登録画面](register_machine_image.png)
+
+---
+
+### コースのダウンロード アプリから新しいコースを追加できます
+
+- こんな製品にぴったりのコースなかいしら...  
+  専用ボタンから直接追加で便利...  
+  (コース名で)
+
+![コース追加画像](course_add_image.png)
+
+### 「スマホで洗濯」アプリ活用ガイド (Web版)
+
+- スマホで洗濯アプリからも確認できます  
+  (メニュー)  
+  [使い方ガイド]  
+  [スマホで洗濯アプリ活用ガイド]  
+  ![QRコード](guide_qr.png)  
+  [https://panasonic.jp/s/an6](https://panasonic.jp/s/an6)
+
+- Webからも確認できます  
+  - パナソニックのWebサイト  
+    ![QRコード](panasonic_web_qr.png)  
+    [https://panasonic.jp/s/an6](https://panasonic.jp/s/an6)
+
+### アプリに関する内容を確認できます
+
+- 「スマホで洗濯」Q＆A  
+  ![QRコード](qa_qr.png)  
+  [https://panasonic.jp/s/an4](https://panasonic.jp/s/an4)
+
+![疑問について](qa_image.png)
+
+### アプリの利用中 エラー表示が出たら
+
+- U81・U82・U83・U84・U85・U86  
+  ![QRコード](error_qr.png)  
+  [https://panasonic.jp/s/an5](https://panasonic.jp/s/an5)
+
+![エラー説明画像](error_image.png)
+
+---
+
+#### ソフトウェアについて
+
+掲載商品、上記の機能のソフトウェアならびに構成されています。
+
+1. パッケージ全体の出願について (以下が満たされないとき)  
+   ソフトウェアの記述で、許可した場合、ご利用くださいサイドバイサイドパターンから提供されていた環境、スクリプトで使用しているライブラリのみ、受理しません。
+2. ソフトウェア  
+3. 新機能に要するライセンス条件オープンソースソフトウェア
+   ![QRコード](software_qr.png)  
+   [https://panasonic.jp/s/an6](https://panasonic.jp/s/an6)
+```

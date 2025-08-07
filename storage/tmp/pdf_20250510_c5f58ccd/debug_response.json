@@ -1,0 +1,124 @@
+{
+  "status_code": 200,
+  "headers": {
+    "Transfer-Encoding": "chunked",
+    "Content-Type": "application/json; odata.metadata=minimal; odata.streaming=true; charset=utf-8",
+    "Content-Encoding": "gzip",
+    "Vary": "Accept-Encoding",
+    "Server": "Microsoft-IIS/10.0",
+    "Strict-Transport-Security": "max-age=2592000, max-age=15724800; includeSubDomains",
+    "Preference-Applied": "odata.include-annotations=\"*\"",
+    "OData-Version": "4.0",
+    "request-id": "8406caf3-07d0-425e-8078-0dbfa578cac0",
+    "elapsed-time": "119",
+    "Date": "Sat, 10 May 2025 03:35:31 GMT"
+  },
+  "timestamp": "2025-05-10T03:35:32.256703",
+  "body": {
+    "@odata.context": "https://iluragsearch.search.windows.net/indexes('mspseimei-sentence')/$metadata#Collection(Microsoft.Azure.Search.V2020_06_30.IndexResult)",
+    "value": [
+      {
+        "key": "doc_20250510033530_229ef6c1_s0",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      },
+      {
+        "key": "doc_20250510033530_229ef6c1_s1",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      },
+      {
+        "key": "doc_20250510033530_229ef6c1_s2",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      },
+      {
+        "key": "doc_20250510033530_229ef6c1_s3",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      },
+      {
+        "key": "doc_20250510033530_229ef6c1_s4",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      },
+      {
+        "key": "doc_20250510033530_229ef6c1_s5",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      },
+      {
+        "key": "doc_20250510033530_229ef6c1_s6",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      },
+      {
+        "key": "doc_20250510033530_229ef6c1_s7",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      },
+      {
+        "key": "doc_20250510033530_229ef6c1_s8",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      },
+      {
+        "key": "doc_20250510033530_229ef6c1_s9",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      },
+      {
+        "key": "doc_20250510033530_229ef6c1_s10",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      },
+      {
+        "key": "doc_20250510033530_229ef6c1_s11",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      },
+      {
+        "key": "doc_20250510033530_229ef6c1_s12",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      },
+      {
+        "key": "doc_20250510033530_229ef6c1_s13",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      },
+      {
+        "key": "doc_20250510033530_229ef6c1_s14",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      },
+      {
+        "key": "doc_20250510033530_229ef6c1_s15",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      },
+      {
+        "key": "doc_20250510033530_229ef6c1_s16",
+        "status": true,
+        "errorMessage": null,
+        "statusCode": 201
+      }
+    ]
+  }
+}

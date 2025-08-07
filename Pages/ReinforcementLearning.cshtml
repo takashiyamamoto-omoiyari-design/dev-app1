@@ -1,0 +1,1453 @@
+@page
+@model AzureRag.Pages.ReinforcementLearningModel
+@{
+    ViewData["Title"] = "データセット - ILU データ構造化ソリューション";
+}
+
+<div class="rl-container">
+    <div class="rl-header">
+        <h1>LLMデータセット作成ツール</h1>
+        <p>FewShot学習（プロンプト埋め込み）データセット作成機能</p>
+    </div>
+
+    <div class="rl-tabs">
+        <button class="rl-tab active" id="tab-jsonl-create">
+            <i class="fas fa-file-code"></i> 1. JSONLファイル作成
+        </button>
+        <button class="rl-tab" id="tab-prompt-adjustment">
+            <i class="fas fa-edit"></i> 2. プロンプト調整
+        </button>
+        <button class="rl-tab" id="tab-ai-response">
+            <i class="fas fa-robot"></i> 3. AI回答比較
+        </button>
+        <button class="rl-tab" id="tab-n1-dataset">
+            <i class="fas fa-lightbulb"></i> 4. 回答粒度学習データセット
+        </button>
+        <!-- 評価作成は現在非表示
+        <button class="rl-tab" id="tab-evaluation">
+            <i class="fas fa-chart-bar"></i> 5. 評価作成
+        </button>
+        -->
+    </div>
+
+    <!-- 1. JSONLファイル作成 -->
+    <div class="rl-content" id="content-jsonl-create">
+        <div class="rl-section">
+            <h2>JSONLファイル作成</h2>
+            <!--<p>正解と誤りのテキストからJSONLファイルを作成します。</p>-->
+            
+            <div class="rl-form-group">
+                <label for="jsonl-id">ID：</label>
+                <input type="text" id="jsonl-id" class="rl-input" placeholder="IDを入力してください...">
+            </div>
+            
+            <div class="rl-form-group">
+                <label for="question-text">質問：</label>
+                <textarea id="question-text" class="rl-textarea" placeholder="質問を入力してください..."></textarea>
+            </div>
+            
+            <div class="rl-form-group">
+                <label for="expected-response-points">期待される回答：</label>
+                <textarea id="expected-response-points" class="rl-textarea" placeholder="期待される回答のポイントを入力してください..."></textarea>
+            </div>
+
+            <div class="rl-form-group">
+                <label for="common-mistake-examples">誤った回答例：</label>
+                <textarea id="common-mistake-examples" class="rl-textarea" placeholder="よくある誤った回答例を入力してください..."></textarea>
+            </div>
+            
+            <div class="rl-form-group">
+                <label for="jsonl-format">JSONLフォーマット：</label>
+                <select id="jsonl-format" class="rl-select">
+                    <option value="qa">質問回答誤り例形式</option>
+                    <option value="completion">補完形式</option>
+                </select>
+            </div>
+            
+            <div class="rl-form-group" style="display: none;">
+                <label for="jsonl-description">説明（オプション）：</label>
+                <input type="text" id="jsonl-description" class="rl-input" placeholder="このJSONLファイルの用途や説明を入力...">
+            </div>
+            
+            <div class="rl-buttons">
+                <button id="generate-jsonl-btn" class="rl-button primary">JSONLを生成</button>
+                <button id="clear-jsonl-form-btn" class="rl-button secondary">クリア</button>
+            </div>
+            
+            <div class="rl-result-container" id="jsonl-result-container" style="display: none;">
+                <h3>生成されたJSONL</h3>
+                <div class="rl-code-container">
+                    <pre id="jsonl-result"></pre>
+                </div>
+                <div class="rl-buttons">
+                    <button id="copy-jsonl-btn" class="rl-button secondary">
+                        <i class="fas fa-copy"></i> コピー
+                    </button>
+                    <button id="download-jsonl-btn" class="rl-button primary">
+                        <i class="fas fa-download"></i> 保存してダウンロード
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. プロンプト調整 -->
+    <div class="rl-content" id="content-prompt-adjustment" style="display: none;">
+        <div class="rl-section">
+            <h2>プロンプト調整</h2>
+            <p>質問を送信する際のユーザープロンプトにJSONLを組み込みます。</p>
+            
+            <div class="rl-form-group">
+                <label for="jsonl-upload">JSONLファイルをアップロード：</label>
+                <div class="rl-upload-container">
+                    <input type="file" id="jsonl-upload" class="rl-file-input" accept=".jsonl">
+                    <label for="jsonl-upload" class="rl-file-label">
+                        <i class="fas fa-upload"></i> ファイルを選択
+                    </label>
+                    <span class="rl-selected-file" id="jsonl-upload-name">選択されていません</span>
+                </div>
+                <div class="rl-helper-text">アップロードしたJSONLファイル、またはテキストで直接入力してください</div>
+            </div>
+            
+            <div class="rl-form-group">
+                <label for="jsonl-text">JSONLテキスト：</label>
+                <textarea id="jsonl-text" class="rl-textarea" placeholder="ここにJSONLを直接入力するか、上で選択したJSONLファイルの内容が表示されます..."></textarea>
+            </div>
+            
+
+            
+            <div class="rl-form-group">
+                <label for="prompt-template">プロンプト調整：</label>
+                <textarea id="prompt-template" class="rl-textarea" placeholder="プロンプト全体の構造を定義します。{examples}の部分にJSONLが埋め込まれます...">あなたは「# 参照ドキュメント」の内容を完璧に理解している物知りな社員です。
+社内の手続きや規則について同僚からの質問に回答します。以下の指示に厳密に従ってください。
+
+# 最優先指示
+1. **簡潔さを最優先**: 特に指定がない限り、常に簡潔な回答を優先し、詳細な説明は避けてください
+2. **マニュアル参照を促進**: 標準的な手続きについては詳細なステップを列挙せず、適切なマニュアルを参照するよう促してください
+
+# 特定の質問への厳密な回答粒度について（類似度85%以上の場合）
+以下の質問に非常に類似した質問を受けた場合は、適切なマニュアルを参照して必ず指定された簡潔さの粒度で回答を提供してください：
+
+{回答粒度調整学習データセットはここへ貼り付け}
+
+
+
+# 前提事項
+
+まずは以下のjsonl形式の例示を読み込んでください。
+
+────────────────────────
+【jsonl形式の例示】
+{回答誤りパターン学習データセットはここへ貼り付け}
+
+────────────────────────
+【指示】
+以降の質問に対しては、上記【jsonl形式の例示】に示した以下のポイントを踏まえて回答してください：
+・例外対応（特に代理店のインプット誤りなど、契約者に非がない場合の柔軟な対応）
+・情報抽出の正確さと、必要な記載事項の網羅（証券分割、署名・記名・押印の要否、手続き方法の分岐点）
+・具体的かつ簡潔な回答記述
+
+────────────────────────
+
+※非常に重要※
+上記のjsonl形式の例示を参考に、以降の【質問】に対して適切な回答を生成してください。
+
+────────────────────────
+
+# 参照ドキュメントの使用ルール
+1. 参照ドキュメントの情報のみを使用して回答してください。
+2. 参照ドキュメントに関連情報が「一部でも」含まれている場合は、その情報を基に回答を構築してください。
+3. 参照ドキュメントに質問に関する情報が全く存在しない場合にのみ「要求された情報は取得した参照ドキュメントにありません。別の質問を試してください。」と回答してください。
+
+# 回答の作成方法
+1. 参照ドキュメントから関連する情報を見つけたら:
+   - 明確かつ簡潔に情報を要約して回答します
+   - 各文の末尾に引用元を [doc0]、[doc1] のように表記します
+   - 複数の参照ドキュメントを適切に組み合わせて包括的な回答を提供します
+   - 質問に直接関係する部分に焦点を当てて回答します
+
+2. 参照ドキュメントから一部の情報しか見つからない場合:
+   - 見つかった情報を使って可能な限り回答を提供します
+   - 「参照ドキュメントには○○についての情報のみ含まれています」と断りを入れます
+   - 決して「回答できない」と判断せず、部分的な情報でも共有します
+
+3. 参照ドキュメントに全く情報がない場合のみ:
+   - 「要求された情報は取得した参照ドキュメントにありません。別の質問を試してください。」と回答します
+
+# 重要事項
+- 参照ドキュメントに関連するキーワードや概念が少しでも含まれている場合は回答を試みてください
+- 自分の知識ではなく、必ず参照ドキュメントの情報のみを使用してください
+- 質問の意図を広く解釈し、関連しそうな情報があれば積極的に提供してください
+</textarea>
+            </div>
+            
+            <div class="rl-buttons">
+                <button id="generate-prompt-btn" class="rl-button primary">プロンプトを生成</button>
+                <button id="clear-prompt-form-btn" class="rl-button secondary">クリア</button>
+            </div>
+            
+            <div class="rl-result-container" id="prompt-result-container" style="display: none;">
+                <h3>生成されたプロンプト</h3>
+                <div class="rl-code-container">
+                    <pre id="prompt-result"></pre>
+                </div>
+                <div class="rl-buttons">
+                    <button id="copy-prompt-btn" class="rl-button secondary">
+                        <i class="fas fa-copy"></i> コピー
+                    </button>
+                    <button id="download-prompt-btn" class="rl-button primary">
+                        <i class="fas fa-download"></i> 保存してダウンロード
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. 回答粒度学習データセット -->
+    <div class="rl-content" id="content-n1-dataset" style="display: none;">
+        <div class="rl-section">
+            <h2>回答粒度学習データセット</h2>
+            <p>特定の質問パターンに対して、詳細な回答と簡潔な回答を定義できるハイブリッドアプローチのJSONLを作成します。</p>
+            
+            <div class="rl-form-group">
+                <label for="n1-jsonl-id">ID：</label>
+                <input type="text" id="n1-jsonl-id" class="rl-input" placeholder="IDを入力してください...">
+            </div>
+            
+            <div class="rl-form-group">
+                <label for="n1-question-text">質問：</label>
+                <textarea id="n1-question-text" class="rl-textarea" placeholder="質問を入力してください..."></textarea>
+            </div>
+            
+            <div class="rl-form-group">
+                <label for="n1-expected-answer">期待される簡潔な回答：</label>
+                <textarea id="n1-expected-answer" class="rl-textarea" placeholder="期待される簡潔な回答を入力してください..."></textarea>
+            </div>
+
+            <div class="rl-form-group">
+                <label for="n1-verbose-answer">詳細な回答例：</label>
+                <textarea id="n1-verbose-answer" class="rl-textarea" placeholder="詳細な回答例を入力してください..."></textarea>
+            </div>
+            
+            <div class="rl-form-group">
+                <label for="n1-error-pattern">エラーパターン：</label>
+                <textarea id="n1-error-pattern" class="rl-textarea" placeholder="詳細回答と簡潔回答の違いを説明するエラーパターンを入力してください..."></textarea>
+            </div>
+            
+            <div class="rl-form-group">
+                <label for="n1-similarity-threshold">類似度閾値：</label>
+                <input type="number" id="n1-similarity-threshold" class="rl-input" value="85" min="0" max="100" placeholder="質問マッチングの類似度閾値（0-100）">
+            </div>
+            
+            <div class="rl-form-group">
+                <label for="n1-is-rare-case">レアケース：</label>
+                <div class="rl-checkbox-wrapper">
+                    <input type="checkbox" id="n1-is-rare-case" class="rl-checkbox">
+                    <label for="n1-is-rare-case" class="rl-checkbox-label">このケースは特に個別具体的なケースです</label>
+                </div>
+            </div>
+            
+            <div class="rl-buttons">
+                <button id="generate-n1-jsonl-btn" class="rl-button primary">JSONLを生成</button>
+                <button id="clear-n1-form-btn" class="rl-button secondary">クリア</button>
+            </div>
+            
+            <div class="rl-result-container" id="n1-jsonl-result-container" style="display: none;">
+                <h3>生成されたJSONL</h3>
+                <div class="rl-code-container">
+                    <pre id="n1-jsonl-result"></pre>
+                </div>
+                <div class="rl-buttons">
+                    <button id="copy-n1-jsonl-btn" class="rl-button secondary">
+                        <i class="fas fa-copy"></i> コピー
+                    </button>
+                    <button id="download-n1-jsonl-btn" class="rl-button primary">
+                        <i class="fas fa-download"></i> 保存してダウンロード
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. AI回答作成 -->
+    <div class="rl-content" id="content-ai-response" style="display: none;">
+        <div class="rl-section">
+            <h2>AI回答比較</h2>
+            <p>JSONLが組み込まれたプロンプトとそうでないプロンプトの回答の違いを比較します。</p>
+            
+            <div class="rl-form-group">
+                <label for="prompt-upload">プロンプトファイルをアップロード：</label>
+                <div class="rl-upload-container">
+                    <input type="file" id="prompt-upload" class="rl-file-input" accept=".txt">
+                    <label for="prompt-upload" class="rl-file-label">
+                        <i class="fas fa-upload"></i> ファイルを選択
+                    </label>
+                    <span class="rl-selected-file" id="prompt-upload-name">選択されていません</span>
+                </div>
+                <div class="rl-helper-text">アップロードしたプロンプトファイルは自動的に保存されます</div>
+            </div>
+            
+            <div class="rl-form-group">
+                <label for="prompt-content">アップロードされたプロンプト内容：</label>
+                <textarea id="prompt-content" class="rl-textarea" placeholder="アップロードされたプロンプトの内容がここに表示されます..." readonly style="white-space: pre-wrap;"></textarea>
+            </div>
+            
+            <div class="rl-form-group">
+                <label for="test-query">テスト質問：</label>
+                <textarea id="test-query" class="rl-textarea" placeholder="AIに尋ねたい質問を入力してください..."></textarea>
+            </div>
+            
+            <!-- AI回答セクションは生成ボタン押下後に表示 -->
+            <div id="ai-answer-section" class="rl-form-group" style="display: none;">
+                <label for="ai-answer">AI回答：</label>
+                <textarea id="ai-answer" class="rl-textarea" placeholder="AIからの回答がここに表示されます..." readonly style="white-space: pre-wrap; height: calc(12em * 2);"></textarea>
+            </div>
+            
+            <div class="rl-buttons">
+                <button id="generate-answer-btn" class="rl-button primary">回答を生成</button>
+                <button id="compare-responses-btn" class="rl-button primary">回答を比較</button>
+                <button id="clear-response-form-btn" class="rl-button secondary">クリア</button>
+            </div>
+            
+            <div class="rl-comparison-container" id="comparison-container" style="display: none;">
+                <div class="rl-comparison-grid">
+                    <div class="rl-comparison-item">
+                        <h3>標準プロンプトでの回答</h3>
+                        <div class="rl-result-box" id="standard-response"></div>
+                    </div>
+                    <div class="rl-comparison-item">
+                        <h3>FewShotプロンプトでの回答</h3>
+                        <div class="rl-result-box" id="fewshot-response"></div>
+                    </div>
+                </div>
+                <div class="rl-buttons">
+                    <button id="save-comparison-btn" class="rl-button primary">
+                        <i class="fas fa-save"></i> 結果を保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. 評価作成 -->
+    <!--
+    <div class="rl-content" id="content-evaluation" style="display: none;">
+        <div class="rl-section">
+            <h2>評価作成</h2>
+            <p>正解データとAI回答内容を比較して、類似度スコアを計算します。</p>
+            
+            <div class="rl-form-group">
+                <label for="eval-jsonl-select">評価用JSONL：</label>
+                <select id="eval-jsonl-select" class="rl-select">
+                    <option value="">-- JSONLファイルを選択 --</option>
+    -->
+                    <!-- 保存されたJSONLファイルがここに表示されます -->
+       <!--
+        </select>
+            </div>
+            
+            <div class="rl-form-group">
+                <label for="eval-response-select">評価用AI回答：</label>
+                <select id="eval-response-select" class="rl-select">
+                    <option value="">-- AI回答を選択 --</option>
+        -->
+                    <!-- 保存された回答がここに表示されます -->
+    <!--
+                </select>
+            </div>
+            
+            <div class="rl-buttons">
+                <button id="calculate-score-btn" class="rl-button primary">スコアを計算</button>
+                <button id="clear-eval-form-btn" class="rl-button secondary">クリア</button>
+            </div>
+            
+            <div class="rl-result-container" id="evaluation-result-container" style="display: none;">
+                <h3>評価結果</h3>
+                <div class="rl-score-container">
+                    <div class="rl-score-box">
+                        <div class="rl-score-label">類似度スコア</div>
+                        <div class="rl-score-value" id="similarity-score">-</div>
+                    </div>
+                    <div class="rl-score-box">
+                        <div class="rl-score-label">精度</div>
+                        <div class="rl-score-value" id="accuracy-score">-</div>
+                    </div>
+                </div>
+                <div class="rl-comparison-grid">
+                    <div class="rl-comparison-item">
+                        <h4>正解テキスト</h4>
+                        <div class="rl-result-box" id="correct-text-display"></div>
+                    </div>
+                    <div class="rl-comparison-item">
+                        <h4>AI回答</h4>
+                        <div class="rl-result-box" id="ai-response-display"></div>
+                    </div>
+                </div>
+                <div class="rl-detail-container">
+                    <h4>詳細分析</h4>
+                    <div class="rl-result-box" id="analysis-details"></div>
+                </div>
+                <div class="rl-buttons">
+                    <button id="export-evaluation-btn" class="rl-button primary">
+                        <i class="fas fa-file-export"></i> 評価結果をエクスポート
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    -->
+</div>
+
+@section Scripts {
+<script>
+    // グローバル変数で最後にアップロードしたJSONLファイルのIDを保持
+    var lastJsonlId = '';
+    console.log('Global variable lastJsonlId initialized to empty string');
+    
+    // グローバル変数で最後にアップロードしたJSONLファイルの【】内のタグを保持
+    // localStorageから復元を試みる
+    window.jsonlPrefixTag = localStorage.getItem('jsonlPrefixTag') || '';
+    console.log('Global variable jsonlPrefixTag initialized from localStorage:', window.jsonlPrefixTag);
+    document.addEventListener('DOMContentLoaded', function() {
+        // JSONLテキストを整形する関数 - { } で囲まれた部分を一行にする
+        function formatJsonlContent(text) {
+            // 複数行にまたがるJSONオブジェクトを一行にまとめる
+            let result = '';
+            let inJsonObject = false;
+            let currentObject = '';
+            let braceCount = 0;
+            
+            // 一行ずつ処理
+            const lines = text.split('\n');
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const trimmedLine = line.trim();
+                
+                // 行に { が含まれていて } が含まれていない場合、JSON開始
+                if (trimmedLine.includes('{') && !inJsonObject) {
+                    inJsonObject = true;
+                    currentObject = trimmedLine;
+                    // 同じ行に { と } が両方含まれている場合は完了
+                    if (trimmedLine.includes('}')) {
+                        result += currentObject + '\n';
+                        inJsonObject = false;
+                        currentObject = '';
+                    }
+                    continue;
+                }
+                
+                // JSONオブジェクト内の行
+                if (inJsonObject) {
+                    // スペースで区切る（必要な場合のみ）
+                    currentObject += ' ' + trimmedLine;
+                    
+                    // JSON終了チェック
+                    if (trimmedLine.includes('}')) {
+                        result += currentObject + '\n';
+                        inJsonObject = false;
+                        currentObject = '';
+                    }
+                } else {
+                    // JSON以外の行はそのまま追加
+                    result += line + '\n';
+                }
+            }
+            
+            return result;
+        }
+        // タブ切り替え処理
+        const tabs = document.querySelectorAll('.rl-tab');
+        const contents = document.querySelectorAll('.rl-content');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                // すべてのタブとコンテンツを非アクティブにする
+                tabs.forEach(t => t.classList.remove('active'));
+                contents.forEach(c => c.style.display = 'none');
+                
+                // クリックされたタブをアクティブにする
+                this.classList.add('active');
+                
+                // 対応するコンテンツを表示する
+                const contentId = this.id.replace('tab-', 'content-');
+                document.getElementById(contentId).style.display = 'block';
+            });
+        });
+        
+        // 1. JSONLファイル作成
+        const generateJsonlBtn = document.getElementById('generate-jsonl-btn');
+        const clearJsonlFormBtn = document.getElementById('clear-jsonl-form-btn');
+        const copyJsonlBtn = document.getElementById('copy-jsonl-btn');
+        
+        if (generateJsonlBtn) {
+            generateJsonlBtn.addEventListener('click', function() {
+                const questionText = document.getElementById('question-text').value.trim();
+                const expectedResponsePoints = document.getElementById('expected-response-points').value.trim();
+                const commonMistakeExamples = document.getElementById('common-mistake-examples').value.trim();
+                const jsonlFormat = document.getElementById('jsonl-format').value;
+                const customId = document.getElementById('jsonl-id').value.trim();
+                
+                console.log('Custom ID from form:', customId);
+                
+                if (!questionText || !expectedResponsePoints || !commonMistakeExamples) {
+                    alert('質問、期待される回答、誤った回答例を入力してください。');
+                    return;
+                }
+                
+                let jsonl = '';
+                
+                if (jsonlFormat === 'qa') {
+                    // 質問回答形式のJSONL（一行に全てのデータを含める）IDはJSONに含めない
+                    jsonl = `{"question": "${questionText}", "expected_response_points": "${expectedResponsePoints}", "common_mistake_examples": "${commonMistakeExamples}"}`;
+                } else {
+                    // 補完形式のJSONL（一行に全てのデータを含める）IDはJSONに含めない
+                    jsonl = `{"prompt": "${questionText}", "expected_completion": "${expectedResponsePoints}", "common_mistakes": "${commonMistakeExamples}"}`;
+                }
+                
+                // 結果を表示
+                document.getElementById('jsonl-result').textContent = jsonl;
+                document.getElementById('jsonl-result-container').style.display = 'block';
+                
+                // カスタムIDがある場合はコンソールに表示
+                if (customId) {
+                    console.log('Custom ID detected for filename (will not be included in JSONL data):', customId);
+                }
+            });
+        }
+        
+        if (clearJsonlFormBtn) {
+            clearJsonlFormBtn.addEventListener('click', function() {
+                document.getElementById('jsonl-id').value = '';
+                document.getElementById('question-text').value = '';
+                document.getElementById('expected-response-points').value = '';
+                document.getElementById('common-mistake-examples').value = '';
+                const descEl = document.getElementById('jsonl-description');
+                if (descEl) descEl.value = '';
+                document.getElementById('jsonl-result-container').style.display = 'none';
+            });
+        }
+        
+        if (copyJsonlBtn) {
+            copyJsonlBtn.addEventListener('click', function() {
+                const jsonlText = document.getElementById('jsonl-result').textContent;
+                navigator.clipboard.writeText(jsonlText).then(() => {
+                    alert('JSONLがクリップボードにコピーされました。');
+                });
+            });
+        }
+        
+        // 保存ボタンは削除されたため、このセクションも削除
+        
+        // ダウンロードボタンの処理（保存してからダウンロード）
+        const downloadJsonlBtn = document.getElementById('download-jsonl-btn');
+        if (downloadJsonlBtn) {
+            downloadJsonlBtn.addEventListener('click', function() {
+                console.log('Download button clicked - will first save then download');
+                const jsonlResultElement = document.getElementById('jsonl-result');
+                if (!jsonlResultElement) {
+                    console.error('jsonl-result element not found');
+                    alert('JSONL結果要素が見つかりません。');
+                    return;
+                }
+                
+                const jsonlText = jsonlResultElement.textContent;
+                console.log('JSONL content to save:', jsonlText);
+                
+                // ID要素と説明要素はオプションとして扱う
+                const descriptionElement = document.getElementById('jsonl-description');
+                const description = descriptionElement ? descriptionElement.value.trim() : '';
+                
+                // ID要素を取得
+                const idElement = document.getElementById('jsonl-id');
+                const customId = idElement ? idElement.value.trim() : '';
+                console.log('Custom ID for filename (may be empty):', customId);
+                
+                // JSONLをサーバーに保存し、保存後にダウンロードを開始
+                console.log('Sending request to save JSONL before download');
+                fetch('/api/reinforcement/save-jsonl', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        content: jsonlText,
+                        description: description,
+                        customId: customId
+                    })
+                })
+                .then(response => {
+                    console.log('Save response received:', response);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Save data received:', data);
+                    if (data.success) {
+                        console.log('JSONL saved successfully. Filename:', data.fileName);
+                        // ファイルのセレクトボックスを更新
+                        updateJsonlFileSelect();
+                        
+                        // 保存したファイルをダウンロード
+                        console.log('Starting download for saved file:', data.fileName);
+                        window.location.href = `/api/reinforcement/download-jsonl/${data.fileName}`;
+                    } else {
+                        console.error('Failed to save JSONL:', data.error);
+                        alert('JSONLの保存に失敗しました: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error occurred during save:', error);
+                    alert('エラーが発生しました: ' + error);
+                });
+            });
+        }
+        
+        // 4. 回答粒度学習データセット機能
+        const generateN1JsonlBtn = document.getElementById('generate-n1-jsonl-btn');
+        const clearN1FormBtn = document.getElementById('clear-n1-form-btn');
+        const copyN1JsonlBtn = document.getElementById('copy-n1-jsonl-btn');
+        const downloadN1JsonlBtn = document.getElementById('download-n1-jsonl-btn');
+        
+        if (generateN1JsonlBtn) {
+            generateN1JsonlBtn.addEventListener('click', function() {
+                // 入力フィールドから値を取得
+                const questionText = document.getElementById('n1-question-text').value.trim();
+                const expectedAnswer = document.getElementById('n1-expected-answer').value.trim();
+                const verboseAnswer = document.getElementById('n1-verbose-answer').value.trim();
+                const errorPattern = document.getElementById('n1-error-pattern').value.trim();
+                const customId = document.getElementById('n1-jsonl-id').value.trim();
+                const similarityThreshold = document.getElementById('n1-similarity-threshold').value.trim();
+                const isRareCase = document.getElementById('n1-is-rare-case').checked;
+                
+                console.log('回答粒度学習データセット Form data collected:', { 
+                    customId, questionText, expectedAnswer, verboseAnswer, errorPattern, 
+                    similarityThreshold, isRareCase
+                });
+                
+                // 必須フィールドの検証
+                if (!questionText || !expectedAnswer || !verboseAnswer) {
+                    alert('質問、期待される簡潔な回答、詳細な回答例は必須項目です。');
+                    return;
+                }
+                
+                // JSONLデータの組み立て
+                // エスケープ処理
+                const escapeJsonString = (str) => {
+                    return str
+                        .replace(/\\/g, '\\\\')
+                        .replace(/"/g, '\\"')
+                        .replace(/\n/g, '\\n')
+                        .replace(/\r/g, '\\r')
+                        .replace(/\t/g, '\\t');
+                };
+                
+                // JSON形式でメタデータを構築
+                const metadata = {
+                    similarity_threshold: parseInt(similarityThreshold || "85"),
+                    is_rare_case: isRareCase
+                };
+                
+                // N=1 FAQ形式のJSONL
+                const jsonl = `{
+  "type": "exact_match",
+  "question": "${escapeJsonString(questionText)}",
+  "expected_answer": "${escapeJsonString(expectedAnswer)}",
+  "verbose_answer": "${escapeJsonString(verboseAnswer)}",
+  "error_pattern": "${escapeJsonString(errorPattern)}",
+  "metadata": ${JSON.stringify(metadata, null, 2)}
+}`;
+                
+                // 結果を表示
+                document.getElementById('n1-jsonl-result').textContent = jsonl;
+                document.getElementById('n1-jsonl-result-container').style.display = 'block';
+                
+                // カスタムIDがある場合はコンソールに表示
+                if (customId) {
+                    console.log('Custom ID detected for N=1 dataset filename:', customId);
+                }
+            });
+        }
+        
+        if (clearN1FormBtn) {
+            clearN1FormBtn.addEventListener('click', function() {
+                // 全てのフィールドをクリア
+                document.getElementById('n1-jsonl-id').value = '';
+                document.getElementById('n1-question-text').value = '';
+                document.getElementById('n1-expected-answer').value = '';
+                document.getElementById('n1-verbose-answer').value = '';
+                document.getElementById('n1-error-pattern').value = '';
+                document.getElementById('n1-similarity-threshold').value = '85';
+                document.getElementById('n1-is-rare-case').checked = false;
+                
+                // 結果コンテナを非表示
+                document.getElementById('n1-jsonl-result-container').style.display = 'none';
+            });
+        }
+        
+        if (copyN1JsonlBtn) {
+            copyN1JsonlBtn.addEventListener('click', function() {
+                const jsonlText = document.getElementById('n1-jsonl-result').textContent;
+                navigator.clipboard.writeText(jsonlText).then(function() {
+                    alert('JSONLをクリップボードにコピーしました');
+                }, function(err) {
+                    console.error('クリップボードへのコピーに失敗しました', err);
+                    alert('クリップボードへのコピーに失敗しました: ' + err);
+                });
+            });
+        }
+        
+        if (downloadN1JsonlBtn) {
+            downloadN1JsonlBtn.addEventListener('click', function() {
+                console.log('N=1 Download button clicked - will first save then download');
+                const jsonlResultElement = document.getElementById('n1-jsonl-result');
+                if (!jsonlResultElement) {
+                    console.error('n1-jsonl-result element not found');
+                    alert('JSONL結果要素が見つかりません。');
+                    return;
+                }
+                
+                const jsonlText = jsonlResultElement.textContent;
+                console.log('N=1 JSONL content to save:', jsonlText);
+                
+                // ID要素を取得
+                const idElement = document.getElementById('n1-jsonl-id');
+                const customId = idElement ? idElement.value.trim() : '';
+                console.log('Custom ID for N=1 filename (may be empty):', customId);
+                
+                // JSONLをサーバーに保存し、保存後にダウンロードを開始
+                console.log('Sending request to save N=1 JSONL before download');
+                fetch('/api/reinforcement/save-jsonl', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        content: jsonlText,
+                        description: '回答粒度学習データセット',
+                        customId: customId
+                    })
+                })
+                .then(response => {
+                    console.log('Save response received:', response);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Save data received:', data);
+                    if (data.success) {
+                        console.log('N=1 JSONL saved successfully. Filename:', data.fileName);
+                        // ファイルのセレクトボックスを更新
+                        updateJsonlFileSelect();
+                        
+                        // 保存したファイルをダウンロード
+                        console.log('Starting download for saved N=1 file:', data.fileName);
+                        window.location.href = `/api/reinforcement/download-jsonl/${data.fileName}`;
+                    } else {
+                        console.error('Failed to save N=1 JSONL:', data.error);
+                        alert('N=1 JSONLの保存に失敗しました: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error occurred during N=1 save:', error);
+                    alert('エラーが発生しました: ' + error);
+                });
+            });
+        }
+        
+        // 2. プロンプト調整
+        const generatePromptBtn = document.getElementById('generate-prompt-btn');
+        const clearPromptFormBtn = document.getElementById('clear-prompt-form-btn');
+        const copyPromptBtn = document.getElementById('copy-prompt-btn');
+        const downloadPromptBtn = document.getElementById('download-prompt-btn');
+        
+        if (generatePromptBtn) {
+            generatePromptBtn.addEventListener('click', function() {
+                const jsonlText = document.getElementById('jsonl-text').value.trim();
+                const promptTemplate = document.getElementById('prompt-template').value.trim();
+                
+                if (!jsonlText || !promptTemplate) {
+                    alert('JSONLテキストとプロンプトテンプレートを入力してください。');
+                    return;
+                }
+                
+                // FewShotプロンプトを生成
+                const generatedPrompt = promptTemplate.replace('{examples}', jsonlText);
+                
+                // 結果を表示
+                document.getElementById('prompt-result').textContent = generatedPrompt;
+                document.getElementById('prompt-result-container').style.display = 'block';
+            });
+        }
+        
+        // コピーボタンのイベントハンドラ
+        if (copyPromptBtn) {
+            copyPromptBtn.addEventListener('click', function() {
+                const promptText = document.getElementById('prompt-result').textContent;
+                navigator.clipboard.writeText(promptText).then(() => {
+                    alert('プロンプトがクリップボードにコピーされました。');
+                });
+            });
+        }
+        
+        // プロンプト保存してダウンロードボタンのイベントハンドラ
+        if (downloadPromptBtn) {
+            downloadPromptBtn.addEventListener('click', function() {
+                console.log('Download prompt button clicked - will first save then download');
+                const promptResultElement = document.getElementById('prompt-result');
+                if (!promptResultElement) {
+                    console.error('prompt-result element not found');
+                    alert('プロンプト結果要素が見つかりません。');
+                    return;
+                }
+                
+                const promptText = promptResultElement.textContent;
+                console.log('Prompt content to save:', promptText.substring(0, 100) + '...');
+                
+                // 説明とファイル名生成（現在の日時を使用）
+                const now = new Date();
+                // 日本時間でのタイムスタンプ形式YYYYMMDD-HHMMSS
+                const jpNow = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // 日本時間（UTC+9）
+                const jpYear = jpNow.getUTCFullYear();
+                const jpMonth = String(jpNow.getUTCMonth() + 1).padStart(2, '0');
+                const jpDay = String(jpNow.getUTCDate()).padStart(2, '0');
+                const jpHours = String(jpNow.getUTCHours()).padStart(2, '0');
+                const jpMinutes = String(jpNow.getUTCMinutes()).padStart(2, '0');
+                const jpSeconds = String(jpNow.getUTCSeconds()).padStart(2, '0');
+                
+                const jpTimeStamp = `${jpYear}${jpMonth}${jpDay}-${jpHours}${jpMinutes}${jpSeconds}`;
+                
+                // グローバル変数からJSONL IDを取得
+                let idSuffix = '';
+                
+                // グローバル変数のlastJsonlIdを使用（ファイルアップロード時に設定される）
+                if (lastJsonlId) {
+                    idSuffix = lastJsonlId;
+                    console.log(`[プロンプト保存] グローバル変数lastJsonlIdから取得したID: ${idSuffix}`);
+                } else {
+                    try {
+                        // グローバル変数にない場合はセレクトボックスから取得（後方互換性・評価タブは現在非表示）
+                        const jsonlSelect = document.getElementById('eval-jsonl-select');
+                        
+                        if (jsonlSelect && jsonlSelect.value) {
+                            // ファイル名からIDの部分を抽出（20250409-134114-19.jsonlの場合の-19部分）
+                            const match = jsonlSelect.value.match(/\d{8}-\d{6}(-\d+)\.jsonl$/);
+                            if (match && match[1]) {
+                                // -19 の部分が match[1] に入る
+                                idSuffix = match[1];
+                                console.log(`[プロンプト保存] セレクトボックスからID抽出: ${idSuffix}`);
+                            } else {
+                                console.log(`[プロンプト保存] セレクトボックスの値からIDが見つかりませんでした: ${jsonlSelect.value}`);
+                            }
+                        } else {
+                            console.log('[プロンプト保存] JSONLファイルが選択されていない、あるいは評価タブが非表示です。最新アップロードからIDが取得できなかった場合、IDは付与されません。');
+                        }
+                    } catch (err) {
+                        console.log('[プロンプト保存] 評価タブが非表示のため、セレクトボックスからのID取得をスキップしました:', err);
+                    }
+                }
+                
+                // デバッグ用ログ - ストレージからの復元確認
+                console.log('[デバッグ【超重要】] localStorage内容:', localStorage);
+                const storedTag = localStorage.getItem('jsonlPrefixTag');
+                console.log('[デバッグ【超重要】] localStorage内のタグ:', storedTag);
+                
+                // 【】タグがある場合はファイル名の先頭に追加
+                let prefixTag = '';
+                console.log('[デバッグ【超重要】] グローバル変数 jsonlPrefixTag の値:', window.jsonlPrefixTag);
+                console.log('[デバッグ【超重要】] グローバル変数 jsonlPrefixTag の型:', typeof window.jsonlPrefixTag);
+                
+                // ストレージにある場合はそちらを優先
+                if (storedTag && storedTag.length > 0) {
+                    console.log(`[デバッグ【超重要】] localStorageからタグを復元: ${storedTag}`);
+                    window.jsonlPrefixTag = storedTag;
+                }
+                
+                if (window.jsonlPrefixTag && window.jsonlPrefixTag !== '') {
+                    prefixTag = `【${window.jsonlPrefixTag}】`;
+                    console.log(`[プロンプト保存【超重要】] 抽出済みタグを使用: ${prefixTag}`);
+                    
+                    // ダイアログ表示（デバッグ用）- コメントアウト
+                    // alert(`プレフィックスタグ検出: ${prefixTag}\nこのタグをプロンプトファイル名の先頭に付与します。`);
+                } else {
+                    console.log('[デバッグ【超重要】] jsonlPrefixTag は空か存在しません');
+                }
+                
+                const description = `${prefixTag}prompt_${jpTimeStamp}${idSuffix}`;
+                
+                // プロンプトをサーバーに保存し、保存後にダウンロードを開始
+                console.log('[デバッグ【超重要】] 最終的な description 値:', description);
+                console.log('[デバッグ【超重要】] prefixTag の値:', prefixTag);
+                console.log('Sending request to save prompt before download');
+                console.log('Prompt text to save (first 100 chars):', promptText.substring(0, 100));
+                console.log('Description with prefix tag:', description);
+                
+                // JSON オブジェクト作成
+                const requestData = {
+                    content: promptText,
+                    description: description
+                };
+                
+                // JSONオブジェクトを確認（デバッグ用）
+                console.log('Request data object:', requestData);
+                console.log('JSON.stringify result:', JSON.stringify(requestData));
+                
+                fetch('/api/reinforcement/save-prompt', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                })
+                .then(response => {
+                    console.log('Save response status:', response.status);
+                    console.log('Save response OK:', response.ok);
+                    console.log('Save response headers:', [...response.headers.entries()]);
+                    console.log('Full response:', response);
+                    
+                    // 応答テキストをログに記録（デバッグ用）
+                    return response.text().then(text => {
+                        console.log('Response text:', text);
+                        
+                        // テキストをJSONに変換
+                        try {
+                            if (text && text.trim()) {
+                                return JSON.parse(text);
+                            } else {
+                                console.error('Empty response received');
+                                throw new Error('空の応答を受信しました');
+                            }
+                        } catch (e) {
+                            console.error('Failed to parse JSON:', e, 'Text was:', text);
+                            throw new Error('JSON解析エラー: ' + e.message);
+                        }
+                    });
+                })
+                .then(data => {
+                    console.log('Save data received:', data);
+                    if (data && data.success) {
+                        console.log('Prompt saved successfully. Filename:', data.fileName);
+                        // プロンプトファイルリストを更新
+                        updatePromptFileSelect();
+                        
+                        // 保存したファイルをダウンロード
+                        console.log('Starting download for saved prompt file:', data.fileName);
+                        window.location.href = `/api/reinforcement/download-prompt/${data.fileName}`;
+                    } else {
+                        // レスポンスデータをより詳細にログ出力
+                        console.error('Failed to save prompt. Response data:', data);
+                        
+                        // エラーメッセージを組み立て
+                        let errorMessage = 'サーバーエラーが発生しました';
+                        
+                        if (data) {
+                            // データがある場合
+                            if (typeof data === 'object') {
+                                // オブジェクトの場合
+                                if (data.error !== undefined) {
+                                    errorMessage = data.error;
+                                } else if (data.message !== undefined) {
+                                    errorMessage = data.message;
+                                } else {
+                                    // オブジェクトの内容をすべて表示
+                                    errorMessage = 'エラー詳細: ' + JSON.stringify(data);
+                                }
+                            } else if (typeof data === 'string') {
+                                // 文字列の場合はそのまま表示
+                                errorMessage = data;
+                            }
+                        }
+                        
+                        console.error('Error message:', errorMessage);
+                        alert('プロンプトの保存に失敗しました: ' + errorMessage);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error occurred during save:', error);
+                    alert('エラーが発生しました: ' + error);
+                });
+            });
+        }
+        
+        // 3. AI回答作成
+        const compareResponsesBtn = document.getElementById('compare-responses-btn');
+        
+        if (compareResponsesBtn) {
+            compareResponsesBtn.addEventListener('click', function() {
+                const testQuery = document.getElementById('test-query').value.trim();
+                const promptFileSelect = document.getElementById('prompt-file-select').value;
+                
+                if (!testQuery) {
+                    alert('テスト質問を入力してください。');
+                    return;
+                }
+                
+                // ローディング表示（実装必要）
+                
+                // 標準プロンプトでの回答取得（ダミー実装）
+                document.getElementById('standard-response').innerHTML = 
+                    `<p>これは標準プロンプトを使用した場合の回答例です。</p>
+                     <p>実際のシステムでは、AIモデルから得られた回答が表示されます。</p>`;
+                
+                // FewShotプロンプトでの回答取得（ダミー実装）
+                document.getElementById('fewshot-response').innerHTML = 
+                    `<p>これはFewShotプロンプトを使用した場合の回答例です。</p>
+                     <p>実際のシステムでは、AIモデルから得られた回答が表示されます。</p>`;
+                
+                // 比較結果を表示
+                document.getElementById('comparison-container').style.display = 'block';
+            });
+        }
+        
+        // 4. 評価作成
+        /* 評価作成セクションは現在非表示
+        const calculateScoreBtn = document.getElementById('calculate-score-btn');
+        
+        if (calculateScoreBtn) {
+            calculateScoreBtn.addEventListener('click', function() {
+                const evalJsonlSelect = document.getElementById('eval-jsonl-select').value;
+                const evalResponseSelect = document.getElementById('eval-response-select').value;
+                
+                if (!evalJsonlSelect || !evalResponseSelect) {
+                    alert('評価用JSONLとAI回答を選択してください。');
+                    return;
+                }
+                
+                // ダミーのスコア計算結果
+                document.getElementById('similarity-score').textContent = '87%';
+                document.getElementById('accuracy-score').textContent = '92%';
+                
+                // ダミーの比較テキスト
+                document.getElementById('correct-text-display').innerHTML = 
+                    '<p>これは正解テキストの例です。実際のシステムでは、選択したJSONLの正解テキストが表示されます。</p>';
+                document.getElementById('ai-response-display').innerHTML = 
+                    '<p>これはAI回答の例です。実際のシステムでは、選択した回答が表示されます。</p>';
+                document.getElementById('analysis-details').innerHTML = 
+                    '<p>キーワード一致率: 90%</p><p>文構造一致率: 85%</p><p>コンテキスト理解度: 88%</p>';
+                
+                // 評価結果を表示
+                document.getElementById('evaluation-result-container').style.display = 'block';
+            });
+        }
+        */
+        
+        // 現在のページを示すためにサイドバーメニューの強化学習項目をアクティブに設定
+        const reinforcementLearningMenu = document.getElementById('reinforcement-learning-menu');
+        if (reinforcementLearningMenu) {
+            // アクティブクラスを追加（ただしチャットメニューは保持する）
+            document.querySelectorAll('.sidebar-menu-item:not(#chat-menu-item)').forEach(el => el.classList.remove('active'));
+            reinforcementLearningMenu.classList.add('active');
+        }
+        
+        // JSONLファイルセレクトボックスの更新関数
+        function updateJsonlFileSelect() {
+            // サーバーからJSONLファイルリストを取得して表示
+            console.log('JSONLファイルセレクトボックスを更新');
+            
+            // JSONLファイルのリストを取得し、ダウンロードボタンに最新のファイル名を設定
+            fetch('/api/reinforcement/jsonl/list')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.files && data.files.length > 0) {
+                        // 最新のファイル（リストの最初のファイル）を取得
+                        const latestFile = data.files[0];
+                        console.log('Latest JSONL file:', latestFile.fileName);
+                        
+                        // ファイル名からIDを抽出（例: 20250409-134114-19.jsonlの場合の-19部分）
+                        const match = latestFile.fileName.match(/\d{8}-\d{6}(-\d+)\.jsonl$/);
+                        if (match && match[1]) {
+                            const customId = match[1];
+                            console.log(`[JSONLファイルリスト更新] 最新ファイルからID抽出: ${customId}`);
+                            // グローバル変数に保存
+                            lastJsonlId = customId;
+                            console.log(`[JSONLファイルリスト更新] グローバル変数lastJsonlIdを更新: ${lastJsonlId}`);
+                        } else {
+                            console.log(`[JSONLファイルリスト更新] 最新ファイルからIDが見つかりませんでした: ${latestFile.fileName}`);
+                        }
+                        
+                        // 【】で囲まれたプレフィックスを抽出（例: 【AD】20250409-135708-22.jsonl）
+                        console.log(`[デバッグ【ファイルリスト更新】] JSONLファイル名: "${latestFile.fileName}"`);
+                        console.log(`[デバッグ【ファイルリスト更新】] 最初の5文字: "${latestFile.fileName.substring(0, 5)}"`);
+                        console.log(`[デバッグ【ファイルリスト更新】] ファイル名が【で始まるか: ${latestFile.fileName.startsWith('【')}`);
+                        
+                        // より緩い正規表現もテスト
+                        const looseMatch = latestFile.fileName.match(/【(.+?)】/);
+                        console.log(`[デバッグ【ファイルリスト更新】] 緩い正規表現の結果:`, looseMatch);
+                        
+                        const prefixMatch = latestFile.fileName.match(/^【(.+?)】/);
+                        console.log(`[デバッグ【ファイルリスト更新】] 厳格な正規表現の結果:`, prefixMatch);
+                        
+                        if (prefixMatch && prefixMatch[1]) {
+                            const prefixTag = prefixMatch[1];
+                            console.log(`[JSONLファイルリスト更新【重要】] 最新ファイル名から【】内のタグを抽出: ${prefixTag}`);
+                            // グローバル変数に保存
+                            window.jsonlPrefixTag = prefixTag;
+                            localStorage.setItem('jsonlPrefixTag', prefixTag);
+                            console.log(`[JSONLファイルリスト更新【重要】] グローバル変数jsonlPrefixTagを更新: ${window.jsonlPrefixTag}`);
+                            
+                            // デバッグ用アラート（コメントアウト）
+                            // alert(`JSONLファイルから【】タグを抽出しました: ${prefixTag}`);
+                        } else if (looseMatch && looseMatch[1]) {
+                            // より緩い正規表現でマッチした場合のフォールバック
+                            const prefixTag = looseMatch[1];
+                            console.log(`[JSONLファイルリスト更新【重要】] 緩い正規表現で【】内のタグを抽出: ${prefixTag}`);
+                            window.jsonlPrefixTag = prefixTag;
+                            localStorage.setItem('jsonlPrefixTag', prefixTag);
+                            
+                            // デバッグ用アラート（コメントアウト）
+                            // alert(`JSONLファイルから【】タグを抽出しました（緩い正規表現）: ${prefixTag}`);
+                        } else {
+                            console.log(`[JSONLファイルリスト更新【重要】] 最新ファイル名から【】タグが見つかりませんでした: ${latestFile.fileName}`);
+                            
+                            // 既存のタグはクリアしない - 別のJSONLファイルからタグが設定されている可能性がある
+                            if (!window.jsonlPrefixTag) {
+                                window.jsonlPrefixTag = '';
+                            }
+                        }
+                        
+                        // ダウンロードボタンにファイル名を設定
+                        const downloadBtn = document.getElementById('download-jsonl-btn');
+                        if (downloadBtn) {
+                            downloadBtn.setAttribute('data-filename', latestFile.fileName);
+                            console.log('Download button updated with filename:', latestFile.fileName);
+                            // デバッグ情報を追加
+                            console.log('Latest file details:', latestFile);
+                            if (latestFile.customId) {
+                                console.log('File has custom ID:', latestFile.customId);
+                            }
+                        }
+                        
+                        // 評価タブは非表示だが、グローバル変数のIDの更新のために処理は残す
+                        // 評価用JSONLファイルセレクトボックスの更新（現在は非表示）
+                        const evalJsonlSelect = document.getElementById('eval-jsonl-select');
+                        
+                        // evalJsonlSelectは評価タブにあるため存在しないかもしれない
+                        if (evalJsonlSelect) {
+                            try {
+                                // 既存のオプションをクリア（最初の「選択」オプションは残す）
+                                while (evalJsonlSelect.options.length > 1) {
+                                    evalJsonlSelect.options.remove(1);
+                                }
+                                
+                                // JSONLファイルをオプションとして追加
+                                data.files.forEach(file => {
+                                    const option = document.createElement('option');
+                                    option.value = file.fileName;
+                                    // 説明がある場合は表示
+                                    const displayName = file.description ? 
+                                        `${file.fileName} - ${file.description}` : file.fileName;
+                                    option.textContent = displayName;
+                                    evalJsonlSelect.appendChild(option);
+                                });
+                                
+                                // 常に最新のファイルを選択状態にする
+                                if (evalJsonlSelect.options.length > 1) {
+                                    evalJsonlSelect.selectedIndex = 1; // 最初の実際のファイル（インデックス0は「選択してください」オプション）
+                                    console.log('Selected latest file in dropdown:', evalJsonlSelect.value);
+                                }
+                            } catch (err) {
+                                console.log('評価タブのセレクトボックス更新をスキップしました:', err);
+                            }
+                        } else {
+                            console.log('評価タブのセレクトボックスが見つかりません（評価タブが非表示のため正常）');
+                        }
+                        
+                        // 重複コードを削除
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching JSONL files:', error);
+                });
+        }
+        
+        // ページ読み込み時に最新のJSONLファイル情報を取得
+        updateJsonlFileSelect();
+        
+        // プロンプトファイルセレクトボックスを更新する関数
+        function updatePromptFileSelect() {
+            console.log('プロンプトファイルセレクトボックスを更新');
+            
+            // プロンプトファイルのリストを取得
+            fetch('/api/reinforcement/list-prompts')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.files && data.files.length > 0) {
+                        // プロンプトファイルセレクトボックスの更新
+                        const promptFileSelect = document.getElementById('prompt-file-select');
+                        
+                        if (promptFileSelect) {
+                            // 既存のオプションをクリア（最初のデフォルトオプションは保持）
+                            while (promptFileSelect.options.length > 1) {
+                                promptFileSelect.remove(1);
+                            }
+                            
+                            // 新しいオプションを追加
+                            data.files.forEach(file => {
+                                const option = document.createElement('option');
+                                option.value = file.fileName;
+                                option.textContent = `${file.fileName} - ${file.description || '説明なし'}`;
+                                promptFileSelect.appendChild(option);
+                            });
+                            
+                            console.log(`プロンプトセレクトボックスを更新: ${data.files.length}件`);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('プロンプトファイル取得エラー:', error);
+                });
+        }
+        
+        // ページ読み込み時にプロンプトファイル情報も取得
+        updatePromptFileSelect();
+        
+        // JSONLテキストエリアの変更イベント - 入力されたJSONLを自動整形
+        const jsonlTextArea = document.getElementById('jsonl-text');
+        if (jsonlTextArea) {
+            jsonlTextArea.addEventListener('change', function() {
+                // 入力内容を整形して表示
+                const formattedText = formatJsonlContent(this.value);
+                this.value = formattedText;
+            });
+        }
+        
+        // JSONLファイルアップロード処理
+        const jsonlUploadInput = document.getElementById('jsonl-upload');
+        if (jsonlUploadInput) {
+            jsonlUploadInput.addEventListener('change', function(e) {
+                if (this.files && this.files[0]) {
+                    const file = this.files[0];
+                    document.getElementById('jsonl-upload-name').textContent = file.name;
+                    
+                    // ファイル名からIDを抽出（例: 20250409-134114-19.jsonlの場合の-19部分）
+                    let customId = '';
+                    const match = file.name.match(/\d{8}-\d{6}(-\d+)\.jsonl$/);
+                    if (match && match[1]) {
+                        customId = match[1];
+                        console.log(`[JSONLアップロード] ファイル名からID抽出: ${customId}`);
+                        // グローバル変数に保存
+                        lastJsonlId = customId;
+                        console.log(`[JSONLアップロード] グローバル変数lastJsonlIdを設定: ${lastJsonlId}`);
+                    } else {
+                        console.log(`[JSONLアップロード] ファイル名からIDが見つかりませんでした: ${file.name}`);
+                    }
+                    
+                    // 【】で囲まれたプレフィックスを抽出（例: 【AD】20250409-135708-22.jsonl）
+                    let prefixTag = '';
+                    console.log(`[デバッグ【重要】] JSONLアップロード - ファイル名: "${file.name}"`);
+                    
+                    // 初期値表示
+                    console.log(`[デバッグ【重要】] 現在のjsonlPrefixTagグローバル変数の値: ${window.jsonlPrefixTag}`);
+                    
+                    // 【】で囲まれた部分を抽出（正規表現）
+                    const prefixMatch = file.name.match(/^【(.+?)】/);
+                    console.log(`[デバッグ【重要】] JSONLアップロード - 正規表現マッチ結果:`, prefixMatch);
+                    
+                    // 正規表現の詳細デバッグ
+                    console.log(`[デバッグ【重要】] ファイル名の最初の5文字: "${file.name.substring(0, 5)}"`);
+                    console.log(`[デバッグ【重要】] ファイル名が【で始まる?: ${file.name.startsWith('【')}`);
+                    console.log(`[デバッグ【重要】] charCodeAt(0): ${file.name.charCodeAt(0)}`); // 【の文字コード確認
+                    
+                    // より緩い正規表現もためしてみる - ファイル名のどこかに【】があればマッチ
+                    const looseMatch = file.name.match(/【(.+?)】/);
+                    console.log(`[デバッグ【重要】] 緩い正規表現マッチ結果:`, looseMatch);
+                    
+                    if (prefixMatch && prefixMatch[1]) {
+                        prefixTag = prefixMatch[1];
+                        console.log(`[JSONLアップロード【重要】] ファイル名から【】内のタグを抽出: ${prefixTag}`);
+                        // 抽出したタグをグローバル変数に保存（新規追加）
+                        window.jsonlPrefixTag = prefixTag;
+                        console.log(`[JSONLアップロード【重要】] グローバル変数jsonlPrefixTagを設定: ${window.jsonlPrefixTag}`);
+                        
+                        // ローカルストレージにも保存してページリロード時の問題を防止
+                        localStorage.setItem('jsonlPrefixTag', prefixTag);
+                        console.log(`[JSONLアップロード【重要】] タグをlocalStorageに保存: ${prefixTag}`);
+                        
+                        // デバッグアラートはコメントアウト
+                        // alert(`【】タグを抽出しました: ${prefixTag}`);
+                    } else if (looseMatch && looseMatch[1]) {
+                        // より緩い正規表現でマッチした場合
+                        prefixTag = looseMatch[1];
+                        console.log(`[JSONLアップロード【重要】] 緩い正規表現でタグを抽出: ${prefixTag}`);
+                        window.jsonlPrefixTag = prefixTag;
+                        localStorage.setItem('jsonlPrefixTag', prefixTag);
+                        
+                        // デバッグアラートはコメントアウト
+                        // alert(`【】タグを抽出しました（緩い正規表現）: ${prefixTag}`);
+                    } else {
+                        console.log(`[JSONLアップロード【重要】] ファイル名から【】タグが見つかりませんでした: ${file.name}`);
+                        window.jsonlPrefixTag = '';
+                        localStorage.removeItem('jsonlPrefixTag');
+                    }
+                    
+                    // FormDataを作成
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('description', file.name);
+                    if (customId) {
+                        formData.append('customId', customId);
+                        console.log(`[JSONLアップロード] フォームデータにcustomId=${customId}を追加`);
+                    }
+                    
+                    // サーバーにアップロード
+                    fetch('/api/reinforcement/jsonl/upload', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(`JSONLファイル "${file.name}" がアップロードされました`);
+                            // ファイルリストを更新
+                            updateJsonlFileSelect();
+                            
+                            // アップロードしたファイルをJSONLテキスト欄に表示（詳細ビューから取得）
+                            fetch(`/api/reinforcement/jsonl/get/${data.fileName}`)
+                                .then(response => response.json())
+                                .then(contentData => {
+                                    if (contentData.success) {
+                                        // JSONLテキストを整形
+                                        const formattedJsonl = formatJsonlContent(contentData.content);
+                                        document.getElementById('jsonl-text').value = formattedJsonl;
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('ファイル内容取得エラー:', error);
+                                });
+                        } else {
+                            alert('アップロードに失敗しました: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('アップロードエラー:', error);
+                        alert('アップロード中にエラーが発生しました');
+                    });
+                }
+            });
+        }
+        
+        // プロンプトファイルアップロード処理
+        const promptUploadInput = document.getElementById('prompt-upload');
+        if (promptUploadInput) {
+            promptUploadInput.addEventListener('change', function(e) {
+                if (this.files && this.files[0]) {
+                    const file = this.files[0];
+                    document.getElementById('prompt-upload-name').textContent = file.name;
+                    
+                    // ファイルの内容を読み込んでテキストエリアに表示
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const fileContent = event.target.result;
+                        document.getElementById('prompt-content').value = fileContent;
+                    };
+                    reader.readAsText(file);
+                    
+                    // FormDataを作成
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('description', file.name);
+                    
+                    // サーバーにアップロード
+                    fetch('/api/reinforcement/upload-prompt', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(`プロンプトファイル "${file.name}" がアップロードされました`);
+                        } else {
+                            alert('アップロードに失敗しました: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('アップロードエラー:', error);
+                        alert('アップロード中にエラーが発生しました');
+                    });
+                }
+            });
+        }
+        
+        // AI回答比較のクリアボタン
+        const clearResponseFormBtn = document.getElementById('clear-response-form-btn');
+        if (clearResponseFormBtn) {
+            clearResponseFormBtn.addEventListener('click', function() {
+                // アップロードフィールドをクリア
+                const promptUploadInput = document.getElementById('prompt-upload');
+                if (promptUploadInput) {
+                    promptUploadInput.value = '';
+                }
+                document.getElementById('prompt-upload-name').textContent = '選択されていません';
+                
+                // プロンプト内容をクリア
+                document.getElementById('prompt-content').value = '';
+                
+                // テスト質問をクリア
+                document.getElementById('test-query').value = '';
+                
+                // AI回答をクリアして非表示
+                document.getElementById('ai-answer').value = '';
+                document.getElementById('ai-answer-section').style.display = 'none';
+                
+                // 比較結果を非表示
+                document.getElementById('comparison-container').style.display = 'none';
+            });
+        }
+        
+        // 回答生成ボタンのイベントハンドラ
+        const generateAnswerBtn = document.getElementById('generate-answer-btn');
+        if (generateAnswerBtn) {
+            generateAnswerBtn.addEventListener('click', function() {
+                const query = document.getElementById('test-query').value.trim();
+                const prompt = document.getElementById('prompt-content').value.trim();
+                
+                if (!query) {
+                    alert('質問を入力してください');
+                    return;
+                }
+                
+                // ボタンを無効化して処理中表示
+                this.disabled = true;
+                this.textContent = '処理中...';
+                
+                // AI回答セクションを表示
+                const answerSection = document.getElementById('ai-answer-section');
+                answerSection.style.display = 'block';
+                document.getElementById('ai-answer').value = '回答を生成中です...';
+                
+                // API呼び出し
+                fetch('/api/mspseimei/generate-answer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        prompt: prompt
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // ボタンを元に戻す
+                    this.disabled = false;
+                    this.textContent = '回答を生成';
+                    
+                    if (data.success) {
+                        // 回答を表示（改行を保持）
+                        document.getElementById('ai-answer').value = data.answer;
+                    } else {
+                        // エラーメッセージを表示
+                        document.getElementById('ai-answer').value = '回答の生成に失敗しました: ' + (data.error || '不明なエラー');
+                    }
+                })
+                .catch(error => {
+                    // ボタンを元に戻す
+                    this.disabled = false;
+                    this.textContent = '回答を生成';
+                    
+                    console.error('回答生成中にエラーが発生しました:', error);
+                    document.getElementById('ai-answer').value = 'エラーが発生しました: ' + error;
+                });
+            });
+        }
+    });
+</script>
+}

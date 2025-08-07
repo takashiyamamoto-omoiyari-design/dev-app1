@@ -1,0 +1,59 @@
+```markdown
+# Sansan／Bill One事業
+## 「Bill One」：顧客基盤とポジショニング
+
+業種業態を問わず、さまざまな企業利用が拡大  
+クラウド請求書受領サービス市場において、売上高シェアNo.1を獲得
+
+---
+
+### クラウド請求書受領サービス市場 (1)
+
+### 2023年売上高シェア
+
+![クラウド請求書受領サービス市場シェアグラフ](https://example.com/billone-share-graph.png)
+
+Bill One  
+powered by Sansan  
+
+47.0%
+
+|      |      |
+|------|------|
+| その他 |      |
+| C社  |    |
+| B社  |    |
+| A社  |    |
+
+---
+
+### 導入顧客事例
+
+- DBJ 日本政策投資銀行
+- SMBC
+- MONEX
+- sojitz 新たな潮流を 未来へつなぐ
+- TAKENAKA
+- あしたを、つよく 野村不動産ホールディングス
+- アサヒファシリティーズ
+- 三菱食品
+- Panasonic Homes
+- 三菱商事都市開発
+- SEGA
+- Fave
+- 健康にアイデアを meiji 株式会社 明治
+- Menicon
+- 日本調剤
+- KYODO NEWS DIGITAL
+- SHIMA SEIKI
+- LINEヤフー
+- dip
+
+---
+
+© Sansan, Inc. 
+
+1. デロイト トーマツ ミック経済研究所「高度成⻑が続くクラウド請求書受領サービス市場」(ミックITリポート 2024年12月号)
+
+43
+```

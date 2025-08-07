@@ -1,0 +1,243 @@
+@page
+@model AzureRag.Pages.IndexModel
+@{
+    ViewData["Title"] = "ILUデータ構造化ソリューション";
+    
+    // 日本語文字かどうかを判定
+    Func<char, bool> IsJapaneseChar = (char c) => {
+        // ひらがな、カタカナ、漢字の範囲をチェック
+        return (c >= 0x3040 && c <= 0x309F) || // ひらがな
+               (c >= 0x30A0 && c <= 0x30FF) || // カタカナ
+               (c >= 0x4E00 && c <= 0x9FFF);   // 漢字の一部
+    };
+    
+    // 日本語を含まない文字列かどうかを判定
+    Func<string, bool> IsNonJapanese = (string s) => {
+        foreach (var c in s)
+        {
+            if (IsJapaneseChar(c))
+            {
+                return false;
+            }
+        }
+        return true;
+    };
+    
+    // 質問から重要なキーワードを抽出するヘルパー関数
+    Func<string, HashSet<string>> ExtractKeywords = (string query) => {
+        if (string.IsNullOrEmpty(query)) return new HashSet<string>();
+        
+        // 除外する単語リスト（ストップワード）
+        var stopWords = new HashSet<string> { 
+            "は", "です", "ます", "とは", "について", "の", "を", "に", "が", "と", "から", "まで", "で",
+            "a", "an", "the", "is", "are", "was", "were", "be", "being", "been",
+            "have", "has", "had", "do", "does", "did", "can", "could", "will", "would",
+            "shall", "should", "may", "might", "must", "to", "of", "in", "on", "at", "by", "for",
+            "with", "about", "against", "between", "into", "through", "during", "before",
+            "after", "above", "below", "from", "up", "down", "what", "when", "where",
+            "why", "how", "all", "any", "both", "each", "few", "more", "most", "other",
+            "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than",
+            "too", "very", "s", "t", "can", "will", "just", "don", "don't", "should",
+            "now", "か", "な", "なに", "何", "など", "教えて", "ください", "ですか", "ますか",
+            "？", "?", "。", "、", ".", ",", "!", "！", "とは", "何ですか", "ですか"
+        };
+        
+        // まずは基本的な分割（スペース、句読点など）
+        var separators = new[] { ' ', '　', ',', '.', '、', '。', '?', '？', '!', '！', ':', '：' };
+        var initialWords = query.Split(separators, StringSplitOptions.RemoveEmptyEntries);
+        
+        // 日本語文字列を一文字ずつ分解して単語に分割する（簡易的な分かち書き）
+        var result = new HashSet<string>();
+        foreach (var word in initialWords)
+        {
+            // 英数字や記号のみの場合はそのまま追加
+            if (IsNonJapanese(word))
+            {
+                var lowerWord = word.ToLower();
+                if (!stopWords.Contains(lowerWord) && lowerWord.Length > 1)
+                {
+                    result.Add(lowerWord);
+                }
+                continue;
+            }
+            
+            // 日本語を含む場合、日本語の部分を1文字ずつに分解して、その後に連続する文字を単語として扱う
+            var currentWord = "";
+            foreach (var c in word)
+            {
+                if (IsJapaneseChar(c))
+                {
+                    // 前の文字の処理
+                    if (!string.IsNullOrEmpty(currentWord))
+                    {
+                        var lowerWord = currentWord.ToLower();
+                        if (!stopWords.Contains(lowerWord) && lowerWord.Length > 1)
+                        {
+                            result.Add(lowerWord);
+                        }
+                        currentWord = "";
+                    }
+                    
+                    // 日本語文字を単独で追加
+                    var charStr = c.ToString().ToLower();
+                    if (!stopWords.Contains(charStr))
+                    {
+                        result.Add(charStr);
+                    }
+                }
+                else
+                {
+                    // 英数字や記号は連結
+                    currentWord += c;
+                }
+            }
+            
+            // 最後の単語の処理
+            if (!string.IsNullOrEmpty(currentWord))
+            {
+                var lowerWord = currentWord.ToLower();
+                if (!stopWords.Contains(lowerWord) && lowerWord.Length > 1)
+                {
+                    result.Add(lowerWord);
+                }
+            }
+        }
+        
+        return result;
+    };
+    
+    // キーワードリストを作成（すべて表示用）
+    var allKeywords = new HashSet<string>();
+    if (!string.IsNullOrEmpty(Model.Query))
+    {
+        // 基本的な分割
+        var separators = new[] { ' ', '　', ',', '.', '、', '。', '?', '？', '!', '！', ':', '：' };
+        var words = Model.Query.Split(separators, StringSplitOptions.RemoveEmptyEntries);
+        
+        foreach (var word in words)
+        {
+            allKeywords.Add(word);
+        }
+    }
+    
+    // 検索に使用する実際のキーワード
+    var keywords = ExtractKeywords(Model.Query);
+    
+    // ドキュメントが関連するかどうかを確認する関数
+    Func<string, string, bool> IsRelevant = (string title, string content) => {
+        if (keywords.Count == 0) return true;
+        
+        title = title?.ToLower() ?? "";
+        content = content?.ToLower() ?? "";
+        
+        foreach (var keyword in keywords)
+        {
+            if (title.Contains(keyword) || content.Contains(keyword))
+            {
+                return true;
+            }
+        }
+        return false;
+    };
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">ILUデータ構造化ソリューション</h3>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iNDMiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTguNzQ3IDQzSDBMMjMuMjU3IDBIMzJMOC43NDcgNDNaIiBmaWxsPSJ1cmwoI2EpIi8+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJhIiB4MT0iMCIgeTE9IjIxLjUwMiIgeDI9IjMyIiB5Mj0iMjEuNTAyIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agc3RvcC1jb2xvcj0iIzBENTdBNyIvPjxzdG9wIG9mZnNldD0iLjUiIHN0b3AtY29sb3I9IiMzMzg5Q0EiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM3MUJDRTkiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48L3N2Zz4=" alt="ILUロゴ" style="width: 48px; height: 64px;">
+                    </div>
+                    <a href="/DataStructuring" class="btn btn-primary btn-lg btn-block">データ構造化ツールへ</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="chat-container">
+    <div class="chat-tabs">
+        <button class="chat-tab active" id="tab-answer">
+            <i class="fas fa-comment-dots chat-tab-icon"></i> 回答
+        </button>
+        <button class="chat-tab" id="tab-source">
+            <i class="fas fa-code chat-tab-icon"></i> ソース <span class="badge badge-source" id="sources-count">0</span>
+        </button>
+    </div>
+    
+    <div class="chat-content" id="content-answer">
+        <div id="chat-messages">
+            <!-- チャット履歴が表示される場所 -->
+            <div class="chat-message">
+                <div class="chat-message-header">
+                    <div class="chat-avatar avatar-ai">AI</div>
+                    <div>AI</div>
+                </div>
+                <div class="chat-message-content">
+                    <p>こんにちは！ILU データ構造化ソリューションへようこそ。</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ローディングインジケーター -->
+        <div class="loading-indicator" id="loading-indicator" style="display: none;">
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
+        </div>
+    </div>
+    
+    <div class="chat-content" id="content-source" style="display: none;">
+        <div id="sources-list" class="source-list">
+            <!-- ソース情報が表示される場所 -->
+            <div class="empty-sources" id="empty-sources">
+                <p>関連するソースはありません</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="chat-footer" id="chat-footer">
+    <div class="chat-input-form">
+        <div class="input-group">
+            <input type="text" class="chat-input" id="query-input" placeholder="質問を入力..." required>
+            <button type="button" class="chat-send-button" id="send-button">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- 静的アカウントメニュー -->
+    <div id="user-icon" style="position: fixed; top: 15px; right: 15px; width: 40px; height: 40px; background-color: #3389ca; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; z-index: 1000;">U</div>
+    <div id="user-dropdown" style="display: none; position: fixed; top: 60px; right: 15px; background-color: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 200px; z-index: 1000;">
+        <div style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
+            <div style="font-weight: 500;">ユーザー</div>
+            <div style="font-size: 0.875rem; color: #6b7280;">ログイン中</div>
+        </div>
+        <div style="padding: 8px;">
+            <a href="/Logout" style="display: block; padding: 8px 16px; color: #ef4444; text-decoration: none; border-radius: 4px;">
+                <i class="fas fa-sign-out-alt" style="margin-right: 8px;"></i>ログアウト
+            </a>
+        </div>
+    </div>
+    <script>
+        // 静的アカウントメニュー用スクリプト
+        (function(){
+            var icon = document.getElementById('user-icon');
+            var dropdown = document.getElementById('user-dropdown');
+            icon.addEventListener('click', function(e){
+                e.stopPropagation();
+                dropdown.style.display = dropdown.style.display==='none'?'block':'none';
+            });
+            document.addEventListener('click', function(){
+                if(dropdown.style.display==='block') dropdown.style.display='none';
+            });
+        })();
+    </script>
+}

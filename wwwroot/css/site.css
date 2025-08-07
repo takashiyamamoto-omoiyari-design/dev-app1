@@ -1,0 +1,413 @@
+/* 全体のスタイル */
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+  background-color: #ffffff;
+}
+
+/* カスタムスタイル */
+.container {
+  width: 100%;
+  max-width: none; /* max-widthの制限を解除 */
+  padding: 0 20px;
+  background-color: #ffffff;
+  box-sizing: border-box; /* paddingを幅に含める */
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 1rem;
+  }
+}
+
+/* Perplexity風チャットUI */
+.perplexity-title-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1.5rem 0;
+  background-color: #ffffff;
+  border: none;
+  box-shadow: none;
+}
+
+.perplexity-title-logo {
+  height: 40px;
+  margin-right: 15px;
+}
+
+.perplexity-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #333;
+  border: none;
+  text-decoration: none;
+}
+
+.chat-container {
+  max-width: 90%; /* 横幅を広げる (元の値: 800px) */
+  margin: 0 auto 5rem;
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 200px);
+  min-height: 500px;
+}
+
+.chat-tabs {
+  display: flex;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+  border-radius: 8px 8px 0 0;
+}
+
+.chat-tab {
+  padding: 1rem 1.5rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-weight: 500;
+  color: #555;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 3px solid transparent;
+}
+
+.chat-tab.active {
+  border-bottom: 3px solid #2563eb;
+  color: #2563eb;
+  background-color: #f0f7ff;
+}
+
+.chat-tab-icon {
+  margin-right: 0.5rem;
+}
+
+.badge {
+  font-size: 0.75rem;
+  background-color: #e0e0e0;
+  color: #333;
+  border-radius: 9999px;
+  padding: 0.25rem 0.5rem;
+  margin-left: 0.5rem;
+}
+
+.badge-source {
+  background-color: #dbeafe;
+  color: #2563eb;
+}
+
+.chat-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  background-color: #fff;
+}
+
+#chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.chat-message {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.chat-message-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: #555;
+}
+
+.chat-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: white;
+}
+
+.avatar-ai {
+  background-color: #2563eb;
+}
+
+.avatar-user {
+  background-color: #14b8a6;
+}
+
+.chat-message-content {
+  margin-left: 2.5rem;
+  color: #333;
+  line-height: 1.6;
+}
+
+.error-message {
+  margin-left: 2.5rem;
+  color: #dc2626;
+  font-weight: 500;
+  padding: 0.5rem;
+  background-color: #fee2e2;
+  border-radius: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.loading-indicator {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0;
+  gap: 0.5rem;
+}
+
+.loading-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #2563eb;
+  border-radius: 50%;
+  animation: loading 1.4s infinite ease-in-out both;
+}
+
+.loading-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes loading {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+.source-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.source-list-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  background-color: #f9fafb;
+}
+
+.source-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background-color: #2563eb;
+  color: white;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.source-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: #555;
+}
+
+.source-details {
+  flex: 1;
+}
+
+.source-domain {
+  font-size: 0.75rem;
+  color: #2563eb;
+  font-weight: 500;
+}
+
+.source-url {
+  font-size: 0.875rem;
+  color: #555;
+  margin-bottom: 0.25rem;
+  word-break: break-all;
+}
+
+.source-title {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.source-description {
+  font-size: 0.875rem;
+  color: #555;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.empty-sources {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.chat-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #fff;
+  border-top: 1px solid #e0e0e0;
+  padding: 1rem;
+  z-index: 10;
+}
+
+.chat-input-form {
+  max-width: 90%; /* チャットコンテナと同じ幅に調整 */
+  margin: 0 auto;
+}
+
+.input-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.chat-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.chat-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.chat-send-button {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.chat-send-button:hover {
+  background-color: #1d4ed8;
+}
+
+.chat-send-button:active {
+  background-color: #1e40af;
+}
+
+@media (max-width: 768px) {
+  .chat-container {
+    margin: 0 1rem 6rem;
+    height: calc(100vh - 180px);
+  }
+}
+
+/* サイドバーを白背景に変更 */
+.sidebar {
+  background-color: #ffffff !important;
+}
+
+.sidebar-toggle {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+/* サイドバーメニュー項目のスタイル */
+.sidebar-menu-item.active {
+  background-color: #f0f0f0 !important;
+  border-left: 3px solid #0c6396 !important;
+}
+
+.sidebar-menu-item:hover, .sidebar-clear-chat:hover {
+  background-color: #f5f5f5 !important;
+}
+
+/* Reinforcement Learning ファイルアップロード用スタイル */
+.rl-upload-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.rl-file-input {
+  width: 0.1px;
+  height: 0.1px;
+  opacity: 0;
+  overflow: hidden;
+  position: absolute;
+  z-index: -1;
+}
+
+.rl-file-label {
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: #f0f0f0;
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 10px;
+  font-size: 0.9rem;
+}
+
+.rl-file-label:hover {
+  background-color: #e0e0e0;
+}
+
+.rl-selected-file {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+/* テキストエリアを縦横スクロール可能にして、折り返さないようにする */
+.rl-textarea {
+  white-space: nowrap;
+  overflow: auto;
+  resize: both;
+}
