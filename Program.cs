@@ -48,6 +48,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 設定ファイルを追加 (新しい設定ファイルを既存の設定の上に追加)
 builder.Configuration.AddJsonFile("appsettings.MultiIndex.json", optional: true, reloadOnChange: true);
+// 環境変数を一番後ろに追加して最優先にする（MultiIndexの空値で上書きされないように）
+builder.Configuration.AddEnvironmentVariables();
 
 // ベースパス設定を追加
 var basePath = Environment.GetEnvironmentVariable("APP_BASE_PATH") ?? "";

@@ -26,17 +26,7 @@ if [ -f bin/Release/net8.0/AzureRag.dll ]; then
     source .env
   fi
   
-  # MSPSeimei関連の環境変数を明示的に設定
-  export MSPSeimei__AzureSearchEndpoint="https://iluragsearch.search.windows.net"
-  export MSPSeimei__AzureSearchKey="Gt6kwOhyZKs0ICnOV17JBljGDwiacTHxKstsIaS7BDAzSeCR55N9"
-  export MSPSeimei__AzureSearchApiVersion="2020-06-30"
-  export MSPSeimei__MainIndexName="mspseimei"
-  export MSPSeimei__SentenceIndexName="mspseimei-sentence"
-  export MSPSeimei__AzureOpenAIEndpoint="https://openai-gpt-forrag.openai.azure.com"
-  export MSPSeimei__AzureOpenAIKey="5c05fc27ca534abbae6a6cee6d9d0b41"
-  export MSPSeimei__AzureOpenAIApiVersion="2023-05-15"
-  export MSPSeimei__ChatModelDeployment="gpt4o-forRAG"
-  export MSPSeimei__EmbeddingModelDeployment="text-embedding-3-large"
+  # 環境変数は .env または systemd EnvironmentFile から読み込む前提に統一
   
   echo "アプリケーションを起動します..."
   exec dotnet bin/Release/net8.0/AzureRag.dll --urls="http://0.0.0.0:5000"
@@ -60,17 +50,7 @@ else
         source .env
       fi
       
-      # MSPSeimei関連の環境変数を明示的に設定
-      export MSPSeimei__AzureSearchEndpoint="https://iluragsearch.search.windows.net"
-      export MSPSeimei__AzureSearchKey="Gt6kwOhyZKs0ICnOV17JBljGDwiacTHxKstsIaS7BDAzSeCR55N9"
-      export MSPSeimei__AzureSearchApiVersion="2020-06-30"
-      export MSPSeimei__MainIndexName="mspseimei"
-      export MSPSeimei__SentenceIndexName="mspseimei-sentence"
-      export MSPSeimei__AzureOpenAIEndpoint="https://openai-gpt-forrag.openai.azure.com"
-      export MSPSeimei__AzureOpenAIKey="5c05fc27ca534abbae6a6cee6d9d0b41"
-      export MSPSeimei__AzureOpenAIApiVersion="2023-05-15"
-      export MSPSeimei__ChatModelDeployment="gpt4o-forRAG"
-      export MSPSeimei__EmbeddingModelDeployment="text-embedding-3-large"
+      # 環境変数は .env または systemd EnvironmentFile から読み込む前提に統一
       
       exec dotnet bin/Release/net8.0/AzureRag.dll --urls="http://0.0.0.0:5000"
     else
