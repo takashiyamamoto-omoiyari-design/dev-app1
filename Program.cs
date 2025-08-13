@@ -50,6 +50,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("appsettings.MultiIndex.json", optional: true, reloadOnChange: true);
 // 環境変数を一番後ろに追加して最優先にする（MultiIndexの空値で上書きされないように）
 builder.Configuration.AddEnvironmentVariables();
+// Users を外部JSONから動的リロード（最終優先）。再起動なしでのユーザー追加・変更を可能にする
+builder.Configuration.AddJsonFile("/etc/trial-app1.users.json", optional: true, reloadOnChange: true);
 
 // ベースパス設定を追加
 var basePath = Environment.GetEnvironmentVariable("APP_BASE_PATH") ?? "";
