@@ -23,8 +23,8 @@ fi
 
 # ベースパス設定を確保
 if [ -z "$APP_BASE_PATH" ]; then
-  echo "APP_BASE_PATH環境変数が未設定のため、/trial-app1を設定します"
-export APP_BASE_PATH="/trial-app1"
+  echo "APP_BASE_PATH環境変数が未設定のため、/demo-app2を設定します"
+export APP_BASE_PATH="/demo-app2"
 fi
 echo "ベースパス設定: $APP_BASE_PATH"
 

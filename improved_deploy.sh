@@ -18,7 +18,7 @@ if [ -f bin/Release/net8.0/AzureRag.dll ]; then
   # 環境変数の設定
   export ASPNETCORE_ENVIRONMENT=Production
   export DOTNET_RUNNING_IN_CONTAINER=true
-  export APP_BASE_PATH="/trial-app1"
+  export APP_BASE_PATH="/demo-app2"
   
   # 環境変数ファイルが存在する場合は読み込む
   if [ -f .env ]; then
@@ -42,7 +42,7 @@ else
       echo "DLLが見つかりました。起動を試みます..."
       export ASPNETCORE_ENVIRONMENT=Production
       export DOTNET_RUNNING_IN_CONTAINER=true
-      export APP_BASE_PATH="/trial-app1"
+      export APP_BASE_PATH="/demo-app2"
       
       # 環境変数ファイルが存在する場合は読み込む
       if [ -f .env ]; then

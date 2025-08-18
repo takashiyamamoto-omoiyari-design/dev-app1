@@ -4,11 +4,11 @@
 echo "=== Demo App 2 権限設定開始 ==="
 
 # 基本パス
-BASE_PATH="/opt/app/trial-app1/publish"
+BASE_PATH="/opt/app/demo-app2/publish"
 STORAGE_PATH="${BASE_PATH}/storage"
 
 echo "アプリケーション実行ユーザーを確認中..."
-APP_USER=$(ps aux | grep -E '[d]otnet.*trial-app1' | awk '{print $1}' | head -1)
+APP_USER=$(ps aux | grep -E '[d]otnet.*demo-app2' | awk '{print $1}' | head -1)
 
 if [ -z "$APP_USER" ]; then
     echo "アプリケーションが実行されていないため、ec2-userを使用します"
@@ -47,4 +47,4 @@ echo "実行ユーザー: ${APP_USER}"
 echo "ストレージパス: ${STORAGE_PATH}"
 echo ""
 echo "サービスを再起動してください:"
-echo "sudo systemctl restart trial-app1" 
+echo "sudo systemctl restart demo-app2" 

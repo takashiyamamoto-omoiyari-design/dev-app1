@@ -11,7 +11,7 @@ const fileUploader = (function() {
     // ユーザー認証情報取得
     async function getCurrentUser() {
         try {
-            const response = await fetch('/trial-app1/api/data-structuring/current-user', {
+            const response = await fetch('/demo-app2/api/data-structuring/current-user', {
                 method: 'GET',
                 credentials: 'include' // ASP.NET認証クッキーを含める
             });

@@ -6,7 +6,7 @@ echo "=== Replitデプロイ環境検証スクリプト ==="
 # 環境変数の設定
 export ASPNETCORE_ENVIRONMENT=Production
 export DOTNET_RUNNING_IN_CONTAINER=true
-export APP_BASE_PATH="/trial-app1"
+export APP_BASE_PATH="/demo-app2"
 
 # 環境変数の表示
 echo "環境変数設定:"

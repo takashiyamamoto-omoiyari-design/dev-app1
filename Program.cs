@@ -51,7 +51,7 @@ builder.Configuration.AddJsonFile("appsettings.MultiIndex.json", optional: true,
 // 環境変数を一番後ろに追加して最優先にする（MultiIndexの空値で上書きされないように）
 builder.Configuration.AddEnvironmentVariables();
 // Users を外部JSONから動的リロード（最終優先）。再起動なしでのユーザー追加・変更を可能にする
-builder.Configuration.AddJsonFile("/etc/trial-app1.users.json", optional: true, reloadOnChange: true);
+builder.Configuration.AddJsonFile("/etc/demo-app2.users.json", optional: true, reloadOnChange: true);
 
 // ベースパス設定を追加
 var basePath = Environment.GetEnvironmentVariable("APP_BASE_PATH") ?? "";
@@ -229,10 +229,10 @@ app.Use(async (context, next) => {
     await next();
 });
 
-// 2. /trial-app1 パスのハンドラー (スラッシュなし) - ヘルスチェックのみ対応
+// 2. /demo-app2 パスのハンドラー (スラッシュなし) - ヘルスチェックのみ対応
 app.Use(async (context, next) => {
-    if (context.Request.Path.Value == "/trial-app1" && IsHealthCheckRequest(context)) {
-        Console.WriteLine("【Replit】基本パスヘルスチェック '/trial-app1' へのアクセス検出");
+    if (context.Request.Path.Value == "/demo-app2" && IsHealthCheckRequest(context)) {
+        Console.WriteLine("【Replit】基本パスヘルスチェック '/demo-app2' へのアクセス検出");
         context.Response.ContentType = "text/plain";
         await context.Response.WriteAsync("OK - Base Path");
         return;
@@ -240,11 +240,11 @@ app.Use(async (context, next) => {
     await next();
 });
 
-// 3. /trial-app1/ パスのハンドラー (スラッシュあり) - Replitヘルスチェックと通常アクセスの両方に対応
+// 3. /demo-app2/ パスのハンドラー (スラッシュあり) - Replitヘルスチェックと通常アクセスの両方に対応
 app.Use(async (context, next) => {
-    if (context.Request.Path.Value == "/trial-app1/" && IsHealthCheckRequest(context)) {
+    if (context.Request.Path.Value == "/demo-app2/" && IsHealthCheckRequest(context)) {
         // Replitのヘルスチェックリクエストと判断
-        Console.WriteLine("【Replit】ヘルスチェックリクエスト '/trial-app1/' へのアクセス検出");
+        Console.WriteLine("【Replit】ヘルスチェックリクエスト '/demo-app2/' へのアクセス検出");
         context.Response.ContentType = "text/plain";
         await context.Response.WriteAsync("OK");
         return;
@@ -254,10 +254,10 @@ app.Use(async (context, next) => {
     await next();
 });
 
-// 4. /trial-app1/health パスのハンドラー - ヘルスチェック専用パス
+// 4. /demo-app2/health パスのハンドラー - ヘルスチェック専用パス
 app.Use(async (context, next) => {
-    if (context.Request.Path.Value == "/trial-app1/health") {
-        Console.WriteLine("【Replit】ヘルスパス '/trial-app1/health' へのアクセス検出");
+    if (context.Request.Path.Value == "/demo-app2/health") {
+        Console.WriteLine("【Replit】ヘルスパス '/demo-app2/health' へのアクセス検出");
         context.Response.ContentType = "text/plain";
         await context.Response.WriteAsync("OK - Health Check");
         return;
@@ -274,7 +274,7 @@ app.Use(async (context, next) => {
         string path = context.Request.Path.Value.ToLower();
         
         // Replit固有のヘルスチェックパスと思われるものには常に「OK」を返す
-        if (path.EndsWith("/health") || path == "/" || path == "/trial-app1" || path == "/trial-app1/") {
+        if (path.EndsWith("/health") || path == "/" || path == "/demo-app2" || path == "/demo-app2/") {
             context.Response.StatusCode = 200;
             context.Response.ContentType = "text/plain";
             await context.Response.WriteAsync("OK");
@@ -284,14 +284,14 @@ app.Use(async (context, next) => {
 
 // Replitデプロイ環境の場合の特別な単一ヘルスチェックミドルウェア
 if (Environment.GetEnvironmentVariable("REPLIT_DEPLOYMENT") == "true") {
-    Console.WriteLine("【Replitデプロイ環境検出】/trial-app1/Health 専用ヘルスチェックミドルウェアを有効化");
+    Console.WriteLine("【Replitデプロイ環境検出】/demo-app2/Health 専用ヘルスチェックミドルウェアを有効化");
     
-    // 特別なミドルウェア：指定されたパス (/trial-app1/Health) のみ対応
+    // 特別なミドルウェア：指定されたパス (/demo-app2/Health) のみ対応
     app.Use(async (context, next) => {
         string path = context.Request.Path.Value?.ToLower();
         
         // Replitヘルスチェック - 指定されたパスのみに対応
-        if (path == "/trial-app1/health") {
+        if (path == "/demo-app2/health") {
             Console.WriteLine($"【Replit特別ミドルウェア】指定ヘルスチェックパス '{path}' に「OK」を応答");
             context.Response.ContentType = "text/plain";
             await context.Response.WriteAsync("OK");

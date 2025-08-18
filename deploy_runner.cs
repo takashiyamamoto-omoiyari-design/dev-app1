@@ -85,7 +85,7 @@ class DeployRunner
             // Set environment variables
             psi.EnvironmentVariables["ASPNETCORE_ENVIRONMENT"] = "Production";
             psi.EnvironmentVariables["DOTNET_RUNNING_IN_CONTAINER"] = "true";
-            psi.EnvironmentVariables["APP_BASE_PATH"] = "/trial-app1";
+            psi.EnvironmentVariables["APP_BASE_PATH"] = "/demo-app2";
             
             // Start the process
             var process = Process.Start(psi);

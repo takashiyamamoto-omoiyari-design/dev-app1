@@ -3,8 +3,8 @@
 // ベースパスを取得する関数をグローバルに定義
 const getBasePath = () => {
     const pathSegments = window.location.pathname.split('/');
-    if (pathSegments.length > 1 && pathSegments[1] === 'trial-app1') {
-        return '/trial-app1';
+    if (pathSegments.length > 1 && pathSegments[1] === 'demo-app2') {
+        return '/demo-app2';
     }
     return '';
 };
@@ -1018,7 +1018,7 @@ ${JSON.stringify({
     async function fetchDocumentList(workId = null) {
         try {
             // APIエンドポイントを作成（workIdがある場合はクエリパラメータとして追加）
-            let url = '/trial-app1/api/data-structuring/filepaths';
+            let url = '/demo-app2/api/data-structuring/filepaths';
             if (workId) {
                 url += `?workId=${encodeURIComponent(workId)}`;
             }
@@ -1349,7 +1349,7 @@ ${JSON.stringify({
                     }
                     
                     // キャッシュになければAPIから取得
-                    const response = await fetch(`/trial-app1/api/data-structuring/content?filepath=${encodeURIComponent(originalItem.filepath)}`, {
+                    const response = await fetch(`/demo-app2/api/data-structuring/content?filepath=${encodeURIComponent(originalItem.filepath)}`, {
                         credentials: 'include' // ASP.NET認証クッキーを含める
                     });
                     
@@ -1614,7 +1614,7 @@ ${JSON.stringify({
                 
                 console.log('🚀 STEP 7: チャットAPI呼び出し開始');
                 
-                const response = await fetch('/trial-app1/api/data-structuring/chat', {
+                const response = await fetch('/demo-app2/api/data-structuring/chat', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1662,7 +1662,7 @@ ${JSON.stringify({
                 return serverAuthCache.userInfo;
             }
             
-            const response = await fetch('/trial-app1/api/data-structuring/current-user', {
+            const response = await fetch('/demo-app2/api/data-structuring/current-user', {
                 method: 'GET',
                 credentials: 'include' // ASP.NET認証クッキーを含める
             });
@@ -1681,13 +1681,13 @@ ${JSON.stringify({
             } else {
                 console.error('ASP.NET認証に失敗しました。ログインが必要です。');
                 // ログインページにリダイレクト
-                window.location.href = '/trial-app1/Login';
+                window.location.href = '/demo-app2/Login';
                 return null;
             }
         } catch (error) {
             console.error('ASP.NET認証情報の取得中にエラーが発生しました:', error);
             // ログインページにリダイレクト
-                            window.location.href = '/trial-app1/Login';
+                            window.location.href = '/demo-app2/Login';
             return null;
         }
     }
@@ -1716,7 +1716,7 @@ ${JSON.stringify({
         async function pollLogs() {
             try {
                 pollCounter++;
-                const response = await fetch(`/trial-app1/api/data-structuring/process-logs/${processId}`, {
+                const response = await fetch(`/demo-app2/api/data-structuring/process-logs/${processId}`, {
                     credentials: 'include' // ASP.NET認証クッキーを含める
                 });
                 if (response.ok) {
@@ -3129,7 +3129,7 @@ ${JSON.stringify({
                         // ベースパスを取得
                         const basePath = getBasePath();
                         console.log('ベースパス:', basePath);
-                        const requestUrl = `/trial-app1/api/AutoStructure/Analyze`;
+                        const requestUrl = `/demo-app2/api/AutoStructure/Analyze`;
                         console.log('リクエストURL:', requestUrl);
                         
                         // /AutoStructure/Analyzeにアクセスしてファイルを解析
@@ -3361,7 +3361,7 @@ ${JSON.stringify({
                         // サーバーにリクエストを送信
                         const filepaths = pageItems.map(item => item.filepath);
                         
-                        fetch('/trial-app1/api/data-structuring/batch-download', {
+                        fetch('/demo-app2/api/data-structuring/batch-download', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
