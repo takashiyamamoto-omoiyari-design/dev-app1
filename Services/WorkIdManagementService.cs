@@ -27,6 +27,10 @@ namespace AzureRag.Services
     public class WorkIdInfo
     {
         public string Name { get; set; }
+        public string OriginalFileName { get; set; }
+        public string SavedRelativePath { get; set; }
+        public DateTime? SavedAt { get; set; }
+        public long? SavedFileSize { get; set; }
     }
 
     /// <summary>
@@ -85,6 +89,11 @@ namespace AzureRag.Services
         /// バックアップファイルの存在確認
         /// </summary>
         Task<bool> BackupExistsAsync();
+
+        /// <summary>
+        /// workIdに対応する保存済みファイル情報を更新
+        /// </summary>
+        Task<bool> UpdateSavedFileInfoAsync(string workId, string originalFileName, string savedRelativePath, long? sizeBytes);
     }
 
     public class WorkIdManagementService : IWorkIdManagementService, IDisposable
@@ -383,7 +392,8 @@ namespace AzureRag.Services
                     // workId情報の追加（簡素化版）
                     _workIdData.WorkIds[workId] = new WorkIdInfo
                     {
-                        Name = fileName ?? $"Document_{workId[..8]}"
+                        Name = fileName ?? $"Document_{workId[..8]}",
+                        OriginalFileName = fileName
                     };
 
                     _workIdData.LastUpdated = DateTime.UtcNow;
@@ -406,6 +416,45 @@ namespace AzureRag.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "ユーザーworkId追加中にエラー: ユーザー={Username}, workId={WorkId}", username, workId);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 保存済みファイル情報を更新
+        /// </summary>
+        public async Task<bool> UpdateSavedFileInfoAsync(string workId, string originalFileName, string savedRelativePath, long? sizeBytes)
+        {
+            try
+            {
+                lock (_lockObject)
+                {
+                    if (!_workIdData.WorkIds.ContainsKey(workId))
+                    {
+                        _workIdData.WorkIds[workId] = new WorkIdInfo
+                        {
+                            Name = originalFileName ?? $"Document_{workId[..8]}"
+                        };
+                    }
+                    var info = _workIdData.WorkIds[workId];
+                    if (!string.IsNullOrEmpty(originalFileName))
+                    {
+                        info.OriginalFileName = originalFileName;
+                        if (string.IsNullOrEmpty(info.Name))
+                        {
+                            info.Name = originalFileName;
+                        }
+                    }
+                    info.SavedRelativePath = savedRelativePath;
+                    info.SavedAt = DateTime.UtcNow;
+                    info.SavedFileSize = sizeBytes;
+                    _workIdData.LastUpdated = DateTime.UtcNow;
+                }
+                return await SaveWorkIdDataAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "保存済みファイル情報の更新中にエラー: workId={WorkId}", workId);
                 return false;
             }
         }

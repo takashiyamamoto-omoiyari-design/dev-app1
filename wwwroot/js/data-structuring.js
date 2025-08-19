@@ -5784,6 +5784,21 @@ ${JSON.stringify({
             uploadStatusModal.style.display = 'none';
             
             console.log(`work_id ${workId} のデータを表示します`);
+            // 選択されたworkIdの原本PDFリンク表示
+            try {
+                const infoRes = await fetch(getBasePath() + `/api/storage/workid-info?work_id=${encodeURIComponent(workId)}`, { credentials: 'include' });
+                if (infoRes.ok) {
+                    const info = await infoRes.json();
+                    if (info && info.hasFile && info.fileUrl && currentFile && currentFileLink) {
+                        currentFileLink.textContent = info.fileName || '-';
+                        currentFileLink.href = info.fileUrl;
+                        currentFile.style.display = '';
+                    } else if (currentFile) {
+                        // hasFile=false の場合は非表示
+                        currentFile.style.display = 'none';
+                    }
+                }
+            } catch (e) { /* no-op */ }
             
             // まず処理状況を確認するAPIを呼び出し
             const basePath = getBasePath();

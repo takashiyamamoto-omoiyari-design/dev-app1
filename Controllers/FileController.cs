@@ -22,17 +22,20 @@ namespace AzureRag.Controllers
         private readonly IFileStorageService _fileStorageService;
         private readonly IIndexManagementService _indexManagementService;
         private readonly Services.IAuthorizationService _authorizationService;
+        private readonly IWorkIdManagementService _workIdManagementService;
 
         public FileController(
             ILogger<FileController> logger,
             IFileStorageService fileStorageService,
             IIndexManagementService indexManagementService,
-            Services.IAuthorizationService authorizationService)
+            Services.IAuthorizationService authorizationService,
+            IWorkIdManagementService workIdManagementService)
         {
             _logger = logger;
             _fileStorageService = fileStorageService;
             _indexManagementService = indexManagementService;
             _authorizationService = authorizationService;
+            _workIdManagementService = workIdManagementService;
         }
 
         /// <summary>

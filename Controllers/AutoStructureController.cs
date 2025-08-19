@@ -17,15 +17,18 @@ namespace AzureRag.Controllers
         private readonly ILogger<AutoStructureController> _logger;
         private readonly IAutoStructureService _autoStructureService;
         private readonly Services.IAuthorizationService _authorizationService;
+        private readonly IWorkIdManagementService _workIdManagementService;
 
         public AutoStructureController(
             ILogger<AutoStructureController> logger,
             IAutoStructureService autoStructureService,
-            Services.IAuthorizationService authorizationService)
+            Services.IAuthorizationService authorizationService,
+            IWorkIdManagementService workIdManagementService)
         {
             _logger = logger;
             _autoStructureService = autoStructureService;
             _authorizationService = authorizationService;
+            _workIdManagementService = workIdManagementService;
         }
 
         /// <summary>
@@ -134,20 +137,60 @@ namespace AzureRag.Controllers
                         }
                     }
                     
-                    // 成功応答を返す
-                    return Ok(new { 
+                    // 外部API成功後、原本PDFを保存（保存系エラーはAnalyze結果とは分離）
+                    var storage = new { saved = false, path = (string)null, error = (string)null };
+                    try
+                    {
+                        var saved = await SaveOriginalPdfAsync(result.WorkId, file);
+                        if (saved.success)
+                        {
+                            storage = new { saved = true, path = saved.relativePath, error = (string)null };
+                            // workId管理に保存情報を反映
+                            await _workIdManagementService.UpdateSavedFileInfoAsync(result.WorkId, file.FileName, saved.relativePath, file.Length);
+                        }
+                        else
+                        {
+                            storage = new { saved = false, path = (string)null, error = saved.error };
+                        }
+                    }
+                    catch (Exception saveEx)
+                    {
+                        _logger.LogWarning(saveEx, "【AutoStructureController】原本PDF保存中にエラー");
+                        storage = new { saved = false, path = (string)null, error = saveEx.Message };
+                    }
+
+                    // 成功応答（Analyzeと保存の切り分け結果を返す）
+                    return Ok(new {
                         work_id = result.WorkId,
                         return_code = 0,
-                        error_detail = ""
+                        error_detail = "",
+                        analyze = new { success = true, error = (string)null },
+                        storage
                     });
                 }
                 catch (Exception apiEx)
                 {
                     _logger.LogError(apiEx, "【AutoStructureController】外部API呼び出し中にエラーが発生しました");
-                    return StatusCode(500, new { 
-                        error = "外部API呼び出し中にエラーが発生しました", 
+                    // Analyze失敗でも保存は参考として試行
+                    var storage = new { saved = false, path = (string)null, error = (string)null };
+                    try
+                    {
+                        if (file != null)
+                        {
+                            var trySave = await SaveOriginalPdfAsync(null, file); // workId未定
+                            storage = new { saved = trySave.success, path = trySave.relativePath, error = trySave.error };
+                        }
+                    }
+                    catch (Exception saveEx)
+                    {
+                        storage = new { saved = false, path = (string)null, error = saveEx.Message };
+                    }
+                    return StatusCode(500, new {
+                        error = "外部API呼び出し中にエラーが発生しました",
                         error_detail = apiEx.Message,
-                        return_code = -1
+                        return_code = -1,
+                        analyze = new { success = false, error = apiEx.Message },
+                        storage
                     });
                 }
             }
@@ -162,6 +205,47 @@ namespace AzureRag.Controllers
                     return_code = 1
                 });
             }
+        }
+
+        /// <summary>
+        /// 原本PDFをローカルstorage配下に保存し、相対パスを返す
+        /// </summary>
+        private async Task<(bool success, string relativePath, string error)> SaveOriginalPdfAsync(string workId, IFormFile file)
+        {
+            try
+            {
+                var baseDir = Path.Combine(Directory.GetCurrentDirectory(), "storage", "original-uploads");
+                var user = User?.Identity?.Name ?? "unknown";
+                var today = DateTime.UtcNow;
+                var safeFileName = SanitizeFileName(file.FileName);
+                var dir = Path.Combine(baseDir, today.ToString("yyyy"), today.ToString("MM"), today.ToString("dd"), user, workId ?? "no-workid");
+                Directory.CreateDirectory(dir);
+                var destPath = Path.Combine(dir, safeFileName);
+
+                using (var stream = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.Read))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                // 相対パスを返す（公開はAPI経由想定）
+                var relative = Path.GetRelativePath(Directory.GetCurrentDirectory(), destPath).Replace('\\','/');
+                _logger.LogInformation("原本PDF保存成功: {Path}", relative);
+                return (true, relative, null);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "原本PDF保存失敗");
+                return (false, null, ex.Message);
+            }
+        }
+
+        private static string SanitizeFileName(string fileName)
+        {
+            var invalid = Path.GetInvalidFileNameChars();
+            var safe = fileName;
+            foreach (var c in invalid) safe = safe.Replace(c, '_');
+            if (!safe.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)) safe += ".pdf";
+            return safe;
         }
 
         /// <summary>
