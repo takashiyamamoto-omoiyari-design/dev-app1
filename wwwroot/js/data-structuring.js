@@ -94,6 +94,187 @@ document.addEventListener('DOMContentLoaded', function() {
     const chatToggleBtn = document.getElementById('chatToggleBtn');
     const closeChatBtn = document.getElementById('close-chat-btn');
     const uploadBtn = document.getElementById('upload-btn');
+    const currentFile = document.getElementById('current-file');
+    const currentFileLink = document.getElementById('current-file-link');
+    const diffAnalyzeBtn = document.getElementById('diff-analyze-btn');
+    const diffModal = document.getElementById('diff-modal');
+    const diffModalClose = document.getElementById('diff-modal-close');
+    const makeSyntheticBtn = document.getElementById('make-synthetic-btn');
+    const s3BucketInput = document.getElementById('s3-bucket');
+    const s3PrefixInput = document.getElementById('s3-prefix');
+    const syntheticSelection = document.getElementById('synthetic-selection');
+    const pageDiffList = document.getElementById('page-diff-list');
+    const diffSeverityFilter = document.getElementById('diff-severity-filter');
+    const optFewshot = document.getElementById('opt-fewshot');
+    const fewshotType = document.getElementById('fewshot-type');
+    // fewshot UI 表示制御と候補取得
+    if (optFewshot && fewshotType) {
+        optFewshot.addEventListener('change', async () => {
+            if (optFewshot.checked) {
+                fewshotType.style.display = '';
+                try {
+                    const res = await fetch(getBasePath() + '/api/user/types', { credentials: 'include' });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const types = Array.isArray(data.types) ? data.types : [];
+                        fewshotType.innerHTML = '<option value="">タイプを選択</option>' +
+                            types.map(t => `<option value="${t}">${t}</option>`).join('');
+                    }
+                } catch (e) {
+                    console.error('ユーザータイプ取得に失敗', e);
+                }
+            } else {
+                fewshotType.style.display = 'none';
+                fewshotType.value = '';
+            }
+        });
+    }
+
+    // 差分モーダル オープン/クローズ
+    if (diffAnalyzeBtn && diffModal && diffModalClose) {
+        diffAnalyzeBtn.addEventListener('click', async () => {
+            diffModal.style.display = 'block';
+            // 直近のworkIdから差分取得（履歴先頭）
+            const history = loadUploadHistory();
+            const latest = history && history.length > 0 ? history[0] : null;
+            if (!latest || !latest.workId) return;
+            try {
+                const res = await fetch(getBasePath() + '/api/ocr/diff-analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ work_id: latest.workId })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    renderDiffSummary(data.summary || {});
+                    renderPageDiffs(data.page_diffs || []);
+                } else {
+                    pageDiffList.innerHTML = '<div style="padding:12px; color:#b91c1c;">差分分析取得に失敗しました</div>';
+                }
+            } catch (e) {
+                pageDiffList.innerHTML = '<div style="padding:12px; color:#b91c1c;">差分分析呼び出しでエラーが発生しました</div>';
+            }
+        });
+        diffModalClose.addEventListener('click', () => {
+            diffModal.style.display = 'none';
+        });
+        window.addEventListener('click', (e) => {
+            if (e.target === diffModal) diffModal.style.display = 'none';
+        });
+    }
+
+    function renderDiffSummary(summary) {
+        const el = document.getElementById('diff-summary');
+        if (!el) return;
+        const items = [
+            { k: 'missing', label: '欠落' },
+            { k: 'added', label: '追加' },
+            { k: 'replaced', label: '置換' },
+            { k: 'structure', label: '構造差' }
+        ];
+        el.innerHTML = items.map(i => {
+            const val = (summary && typeof summary[i.k] === 'number') ? summary[i.k] : 0;
+            return `<div style="display:flex; justify-content:space-between; padding:4px 0;">
+                <span>${i.label}</span><span>${val}</span>
+            </div>`;
+        }).join('');
+    }
+
+    function renderPageDiffs(list) {
+        if (!pageDiffList) return;
+        const severity = diffSeverityFilter ? diffSeverityFilter.value : '';
+        const filtered = !severity ? list : list.filter(x => (x.severity||'').toLowerCase() === severity);
+        if (filtered.length === 0) {
+            pageDiffList.innerHTML = '<div style="padding:12px; color:#6b7280;">差分はありません</div>';
+            return;
+        }
+        pageDiffList.innerHTML = filtered.map(d => {
+            const sevColor = d.severity === 'high' ? '#dc2626' : d.severity === 'medium' ? '#d97706' : '#2563eb';
+            return `<div style="border-bottom:1px solid #e5e7eb; padding:10px 12px;">
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <span style="font-weight:600;">p.${(d.page_no ?? 0)+1}</span>
+                    <span style="font-size:.8rem; padding:2px 6px; background:${sevColor}; color:#fff; border-radius:10px;">${d.severity||'-'}</span>
+                    <span style="font-size:.85rem; color:#374151;">${d.category||'-'}</span>
+                </div>
+                <div style="margin-top:6px; font-size:.9rem;">
+                    <div style="color:#111827;"><strong>抽出:</strong> ${escapeHtml(d.extracted_excerpt||'')}</div>
+                    <div style="color:#6b7280;"><strong>原文:</strong> ${escapeHtml(d.original_excerpt||'')}</div>
+                    ${d.details ? `<div style=\"color:#374151; margin-top:4px;\">${escapeHtml(d.details)}</div>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    if (diffSeverityFilter) {
+        diffSeverityFilter.addEventListener('change', () => {
+            // 再描画（直近の結果を保持していないため簡易対応: 再リクエスト）
+            const history = loadUploadHistory();
+            const latest = history && history.length > 0 ? history[0] : null;
+            if (!latest || !latest.workId) return;
+            fetch(getBasePath() + '/api/ocr/diff-analyze', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                body: JSON.stringify({ work_id: latest.workId })
+            }).then(r => r.json()).then(d => renderPageDiffs(d.page_diffs||[])).catch(()=>{});
+        });
+    }
+
+    // 合成データ作成（S3出力）
+    if (makeSyntheticBtn) {
+        makeSyntheticBtn.addEventListener('click', async () => {
+            const history = loadUploadHistory();
+            const latest = history && history.length > 0 ? history[0] : null;
+            if (!latest || !latest.workId) return;
+            const bucket = (s3BucketInput && s3BucketInput.value.trim()) || '';
+            const prefix = (s3PrefixInput && s3PrefixInput.value.trim()) || '';
+            if (!bucket) { alert('Bucket を入力してください'); return; }
+            try {
+                const body = {
+                    work_id: latest.workId,
+                    s3_config: { bucket, prefix },
+                    selection: collectSyntheticSelection()
+                };
+                const res = await fetch(getBasePath() + '/api/synthetic/export-jsonl', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) throw new Error('export-jsonl failed');
+                const data = await res.json();
+                showToast(`S3に配置しました: ${data.base_path || ''}`, 'success');
+            } catch (e) {
+                showToast('合成データ作成に失敗しました', 'error');
+            }
+        });
+    }
+
+    function collectSyntheticSelection() {
+        // 必要に応じてチェックボックス群から選択を収集する
+        // ここでは空の選択を返す（UI整備後に拡張）
+        return { include_categories: [], pages: [] };
+    }
+
+    // アップロード後のPDF名リンク表示（履歴から）
+    try {
+        const history = loadUploadHistory();
+        const latest = history && history.length > 0 ? history[0] : null;
+        if (latest && currentFile && currentFileLink) {
+            const fileName = latest.fileName || '-';
+            currentFileLink.textContent = fileName;
+            // 署名URL取得
+            if (latest.s3Key) {
+                fetch(getBasePath() + '/api/storage/s3-signed-url?key=' + encodeURIComponent(latest.s3Key), { credentials: 'include' })
+                    .then(r => r.ok ? r.json() : null)
+                    .then(d => {
+                        if (d && d.url) {
+                            currentFileLink.href = d.url;
+                            currentFile.style.display = '';
+                        }
+                    }).catch(()=>{});
+            } else {
+                // s3Keyが無い場合はそのまま非表示のまま
+            }
+        }
+    } catch (_) {}
     // ダウンロードボタンと一括ダウンロードボタンを非表示にする
     const downloadBtn = document.getElementById('download-btn');
     if (downloadBtn) downloadBtn.style.display = 'none';
