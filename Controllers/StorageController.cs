@@ -118,7 +118,17 @@ namespace AzureRag.Controllers
 
                 var info = await _workIdManagementService.GetWorkIdInfoAsync(work_id);
                 var hasFile = info != null && !string.IsNullOrEmpty(info.SavedRelativePath);
-                var fileUrl = hasFile ? $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/storage/original?work_id={Uri.EscapeDataString(work_id)}" : null;
+                // できる限りプロキシヘッダを優先してスキーム/ホストを決定
+                string scheme = Request.Headers["X-Forwarded-Proto"].ToString();
+                if (string.IsNullOrWhiteSpace(scheme)) scheme = Request.Scheme;
+                string host = Request.Headers["X-Forwarded-Host"].ToString();
+                if (string.IsNullOrWhiteSpace(host)) host = Request.Host.ToString();
+                // 最低限のフォールバック: 既知ドメインならhttpsを既定に
+                if (string.Equals(scheme, "http", StringComparison.OrdinalIgnoreCase) && host.Contains("ilu.co.jp"))
+                {
+                    scheme = "https";
+                }
+                var fileUrl = hasFile ? $"{scheme}://{host}{Request.PathBase}/api/storage/original?work_id={Uri.EscapeDataString(work_id)}" : null;
 
                 return Ok(new {
                     workId = work_id,
