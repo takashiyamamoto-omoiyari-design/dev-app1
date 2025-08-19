@@ -14,6 +14,7 @@ using System.Text.Unicode;
 using AzureRag.Services;
 using AzureRag.Services.PDF;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.HttpOverrides;
 
 // UTF-8エンコーディングを設定（デプロイ環境向け強化）
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -142,6 +143,12 @@ var app = builder.Build();
 
 // HTTPパイプラインを設定
 app.UseExceptionHandler($"{basePath}/Error");
+
+// 逆プロキシ（ALB/Nginx）経由のスキーム/ホスト判定を正しく行う
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedHost
+});
 
 // Replitヘルスチェックを判断するヘルパー関数
 Func<HttpContext, bool> IsHealthCheckRequest = (HttpContext context) =>
