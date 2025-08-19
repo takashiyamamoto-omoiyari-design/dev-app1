@@ -255,9 +255,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // アップロード後のPDF名リンク表示（履歴から）
     try {
+        const urlParamCheck = new URLSearchParams(window.location.search);
+        const hasParamWorkIdInit = !!urlParamCheck.get('workId');
         const history = loadUploadHistory();
         const latest = history && history.length > 0 ? history[0] : null;
-        if (latest && currentFile && currentFileLink) {
+        // URLにworkId指定がある場合は、初期表示の最新履歴によるリンク表示はスキップ（競合防止）
+        if (!hasParamWorkIdInit && latest && currentFile && currentFileLink) {
             const fileName = latest.fileName || '-';
             currentFileLink.textContent = fileName;
             // 署名URL取得
@@ -273,6 +276,26 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 // s3Keyが無い場合はそのまま非表示のまま
             }
+        }
+    } catch (_) {}
+
+    // URLのworkIdが指定されている場合は、そのworkIdの原本PDFリンクを表示
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const paramWorkId = urlParams.get('workId');
+        if (paramWorkId && currentFile && currentFileLink) {
+            fetch(getBasePath() + `/api/storage/workid-info?work_id=${encodeURIComponent(paramWorkId)}`, { credentials: 'include' })
+                .then(r => r.ok ? r.json() : null)
+                .then(info => {
+                    if (!info) return;
+                    if (info.hasFile && info.fileUrl) {
+                        currentFileLink.textContent = info.fileName || '-';
+                        currentFileLink.href = info.fileUrl;
+                        currentFile.style.display = '';
+                    } else {
+                        currentFile.style.display = 'none';
+                    }
+                }).catch(()=>{});
         }
     } catch (_) {}
     // ダウンロードボタンと一括ダウンロードボタンを非表示にする
