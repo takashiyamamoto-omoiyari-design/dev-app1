@@ -84,8 +84,9 @@ namespace AzureRag.Controllers
 
                 var stream = System.IO.File.OpenRead(path);
                 var fileName = info.OriginalFileName ?? Path.GetFileName(path);
-                // ブラウザでのインライン表示を強制
-                Response.Headers["Content-Disposition"] = $"inline; filename=\"{fileName}\"";
+                // ブラウザでのインライン表示（日本語ファイル名は RFC 5987 形式で安全に指定）
+                var encodedFileName = Uri.EscapeDataString(fileName);
+                Response.Headers["Content-Disposition"] = $"inline; filename=\"file.pdf\"; filename*=UTF-8''{encodedFileName}";
                 return new FileStreamResult(stream, "application/pdf") { EnableRangeProcessing = true };
             }
             catch (Exception ex)
