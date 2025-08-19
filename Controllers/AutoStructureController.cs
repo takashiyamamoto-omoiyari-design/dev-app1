@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using AzureRag.Services;
+using Microsoft.Extensions.Configuration;
 
 namespace AzureRag.Controllers
 {
@@ -18,17 +19,20 @@ namespace AzureRag.Controllers
         private readonly IAutoStructureService _autoStructureService;
         private readonly Services.IAuthorizationService _authorizationService;
         private readonly IWorkIdManagementService _workIdManagementService;
+        private readonly IConfiguration _configuration;
 
         public AutoStructureController(
             ILogger<AutoStructureController> logger,
             IAutoStructureService autoStructureService,
             Services.IAuthorizationService authorizationService,
-            IWorkIdManagementService workIdManagementService)
+            IWorkIdManagementService workIdManagementService,
+            IConfiguration configuration)
         {
             _logger = logger;
             _autoStructureService = autoStructureService;
             _authorizationService = authorizationService;
             _workIdManagementService = workIdManagementService;
+            _configuration = configuration;
         }
 
         /// <summary>
@@ -214,7 +218,11 @@ namespace AzureRag.Controllers
         {
             try
             {
-                var baseDir = Path.Combine(Directory.GetCurrentDirectory(), "storage", "original-uploads");
+                // 保存ベースパスを設定から取得（未設定時は /var/lib/demo-app2/original-uploads に保存）
+                var configuredBase = _configuration["Storage:OriginalBasePath"];
+                var baseDir = !string.IsNullOrWhiteSpace(configuredBase)
+                    ? configuredBase
+                    : "/var/lib/demo-app2/original-uploads";
                 var user = User?.Identity?.Name ?? "unknown";
                 var today = DateTime.UtcNow;
                 var safeFileName = SanitizeFileName(file.FileName);
@@ -227,10 +235,9 @@ namespace AzureRag.Controllers
                     await file.CopyToAsync(stream);
                 }
 
-                // 相対パスを返す（公開はAPI経由想定）
-                var relative = Path.GetRelativePath(Directory.GetCurrentDirectory(), destPath).Replace('\\','/');
-                _logger.LogInformation("原本PDF保存成功: {Path}", relative);
-                return (true, relative, null);
+                // 絶対パスを返す（公開はAPI経由想定）
+                _logger.LogInformation("原本PDF保存成功: {Path}", destPath);
+                return (true, destPath, null);
             }
             catch (Exception ex)
             {

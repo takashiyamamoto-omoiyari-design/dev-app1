@@ -55,9 +55,27 @@ namespace AzureRag.Controllers
                     return NotFound(new { error = "保存ファイルが見つかりません" });
                 }
 
-                var path = Path.IsPathRooted(info.SavedRelativePath)
-                    ? info.SavedRelativePath
-                    : Path.Combine(Directory.GetCurrentDirectory(), info.SavedRelativePath);
+                // 保存時は Directory.GetCurrentDirectory() 基準で相対パスを記録しているが、
+                // 環境により CurrentDirectory が変わるケースに備え、複数候補を試す
+                string ResolvePath(string relativeOrAbsolute)
+                {
+                    if (Path.IsPathRooted(relativeOrAbsolute)) return relativeOrAbsolute;
+                    var cand1 = Path.Combine(Directory.GetCurrentDirectory(), relativeOrAbsolute);
+                    if (System.IO.File.Exists(cand1)) return cand1;
+                    var cand2 = Path.Combine(AppContext.BaseDirectory, relativeOrAbsolute);
+                    if (System.IO.File.Exists(cand2)) return cand2;
+                    // 旧ルート（publishの1階層上）も念のため
+                    var publishDir = AppContext.BaseDirectory?.TrimEnd(Path.DirectorySeparatorChar);
+                    var rootDir = string.IsNullOrEmpty(publishDir) ? null : Directory.GetParent(publishDir)?.FullName;
+                    if (!string.IsNullOrEmpty(rootDir))
+                    {
+                        var cand3 = Path.Combine(rootDir, relativeOrAbsolute);
+                        if (System.IO.File.Exists(cand3)) return cand3;
+                    }
+                    return cand1; // 既定を返す
+                }
+
+                var path = info.SavedRelativePath;
 
                 if (!System.IO.File.Exists(path))
                 {
@@ -66,7 +84,9 @@ namespace AzureRag.Controllers
 
                 var stream = System.IO.File.OpenRead(path);
                 var fileName = info.OriginalFileName ?? Path.GetFileName(path);
-                return File(stream, "application/pdf", fileName, enableRangeProcessing: true);
+                // ブラウザでのインライン表示を強制
+                Response.Headers["Content-Disposition"] = $"inline; filename=\"{fileName}\"";
+                return new FileStreamResult(stream, "application/pdf") { EnableRangeProcessing = true };
             }
             catch (Exception ex)
             {
@@ -98,7 +118,7 @@ namespace AzureRag.Controllers
 
                 var info = await _workIdManagementService.GetWorkIdInfoAsync(work_id);
                 var hasFile = info != null && !string.IsNullOrEmpty(info.SavedRelativePath);
-                var fileUrl = hasFile ? Url.Content($"~/api/storage/original?work_id={Uri.EscapeDataString(work_id)}") : null;
+                var fileUrl = hasFile ? $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/storage/original?work_id={Uri.EscapeDataString(work_id)}" : null;
 
                 return Ok(new {
                     workId = work_id,
