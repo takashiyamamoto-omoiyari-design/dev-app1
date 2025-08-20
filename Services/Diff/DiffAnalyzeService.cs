@@ -114,6 +114,18 @@ namespace AzureRag.Services.Diff
             var pageMax = Math.Max(originalByPage.Keys.DefaultIfEmpty(1).Max(), extractedByPage.Keys.DefaultIfEmpty(1).Max());
             var result = new DiffAnalyzeResult();
 
+            // 画像生成出力ルートと一回生成の制御
+            var genBaseOut = Environment.GetEnvironmentVariable("DEMOAPP_TMP_DIR");
+            if (string.IsNullOrWhiteSpace(genBaseOut))
+            {
+                // 既定の永続領域
+                genBaseOut = "/var/lib/demo-app2/tmp";
+            }
+            Directory.CreateDirectory(genBaseOut);
+            bool triedGeneration = false;
+            string generationDir = null; // この分析実行内で固定
+            string genStamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+
             // 画像自動生成に備え、必要依存が無ければ可能な範囲で導入を試みる
             await EnsurePdfImageDependenciesAsync();
 
@@ -131,34 +143,27 @@ namespace AzureRag.Services.Diff
                     // 画像パスはストレージ/tmp配下に生成済みのPNGがあればそれを使う。無ければスキップ。
                     // 既存パイプラインでは images ディレクトリや tmp/pdf_*/ に出力されることがある。
                     // ここでは単純に見つかった最初の候補を使う。
-                    // 出力ルート: 環境変数または既定の永続領域
-                    var baseOut = Environment.GetEnvironmentVariable("DEMOAPP_TMP_DIR");
-                    if (string.IsNullOrWhiteSpace(baseOut))
-                    {
-                        // /var/lib/demo-app2/tmp を既定に（書き込み権限を想定）
-                        baseOut = "/var/lib/demo-app2/tmp";
-                    }
-                    Directory.CreateDirectory(baseOut);
-                    var dir = baseOut;
+                    // この分析実行内での探索ディレクトリ: 生成済みであれば generationDir、無ければ共有ルート
+                    var dir = generationDir ?? genBaseOut;
                     string[] candidates = Array.Empty<string>();
                     if (Directory.Exists(dir))
                     {
                         candidates = Directory.GetFiles(dir, "*page_" + page + ".png", SearchOption.AllDirectories);
                     }
                     // 画像が無い場合は自動生成（pdf_to_images.py）
-                    if (candidates.Length == 0)
+                    if (candidates.Length == 0 && !triedGeneration)
                     {
                         try
                         {
-                            var tmpDir = Path.Combine(baseOut, "pdf_gen_" + DateTime.UtcNow.ToString("yyyyMMdd_HHmmss"));
-                            Directory.CreateDirectory(tmpDir);
+                            generationDir = generationDir ?? Path.Combine(genBaseOut, "pdf_gen_" + genStamp);
+                            Directory.CreateDirectory(generationDir);
                             // python3 pdf_to_images.py <pdf> <outDir> <fileId> <original>
                             var scriptPath = Path.Combine(AppContext.BaseDirectory, "pdf_to_images.py");
                             if (!File.Exists(scriptPath)) scriptPath = "pdf_to_images.py";
                             var start = new ProcessStartInfo
                             {
                                 FileName = "python3",
-                                Arguments = $"\"{scriptPath}\" \"{path}\" \"{tmpDir}\" \"{Path.GetFileNameWithoutExtension(info.OriginalFileName ?? workId)}\" \"{info.OriginalFileName ?? "document"}\" --dpi 200 --format png",
+                                Arguments = $"\"{scriptPath}\" \"{path}\" \"{generationDir}\" \"{Path.GetFileNameWithoutExtension(info.OriginalFileName ?? workId)}\" \"{info.OriginalFileName ?? "document"}\" --dpi 200 --format png",
                                 RedirectStandardOutput = true,
                                 RedirectStandardError = true,
                                 UseShellExecute = false,
@@ -174,15 +179,21 @@ namespace AzureRag.Services.Diff
                                 _logger?.LogInformation("[Diff] pdf_to_images.py stdout: {Out}", so);
                                 if (!string.IsNullOrEmpty(se)) _logger?.LogWarning("[Diff] pdf_to_images.py stderr: {Err}", se);
                             }
-                            if (Directory.Exists(tmpDir))
+                            triedGeneration = true; // この分析実行では一度だけ生成
+                            if (Directory.Exists(generationDir))
                             {
-                                candidates = Directory.GetFiles(tmpDir, "*page_" + page + ".png", SearchOption.AllDirectories);
+                                candidates = Directory.GetFiles(generationDir, "*page_" + page + ".png", SearchOption.AllDirectories);
                             }
                         }
                         catch (Exception pex)
                         {
                             _logger?.LogWarning(pex, "[Diff] 画像自動生成に失敗");
                         }
+                    }
+                    // すでに一度生成済みで、dir が共有ルートのままなら、生成先固定ディレクトリも探索
+                    if (candidates.Length == 0 && triedGeneration && !string.IsNullOrEmpty(generationDir) && Directory.Exists(generationDir))
+                    {
+                        candidates = Directory.GetFiles(generationDir, "*page_" + page + ".png", SearchOption.AllDirectories);
                     }
                     if (candidates.Length > 0)
                     {
