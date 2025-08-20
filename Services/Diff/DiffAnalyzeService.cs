@@ -131,7 +131,15 @@ namespace AzureRag.Services.Diff
                     // 画像パスはストレージ/tmp配下に生成済みのPNGがあればそれを使う。無ければスキップ。
                     // 既存パイプラインでは images ディレクトリや tmp/pdf_*/ に出力されることがある。
                     // ここでは単純に見つかった最初の候補を使う。
-                    var dir = Path.Combine("storage", "tmp");
+                    // 出力ルート: 環境変数または既定の永続領域
+                    var baseOut = Environment.GetEnvironmentVariable("DEMOAPP_TMP_DIR");
+                    if (string.IsNullOrWhiteSpace(baseOut))
+                    {
+                        // /var/lib/demo-app2/tmp を既定に（書き込み権限を想定）
+                        baseOut = "/var/lib/demo-app2/tmp";
+                    }
+                    Directory.CreateDirectory(baseOut);
+                    var dir = baseOut;
                     string[] candidates = Array.Empty<string>();
                     if (Directory.Exists(dir))
                     {
@@ -142,7 +150,7 @@ namespace AzureRag.Services.Diff
                     {
                         try
                         {
-                            var tmpDir = Path.Combine("storage", "tmp", "pdf_gen_" + DateTime.UtcNow.ToString("yyyyMMdd_HHmmss"));
+                            var tmpDir = Path.Combine(baseOut, "pdf_gen_" + DateTime.UtcNow.ToString("yyyyMMdd_HHmmss"));
                             Directory.CreateDirectory(tmpDir);
                             // python3 pdf_to_images.py <pdf> <outDir> <fileId> <original>
                             var scriptPath = Path.Combine(AppContext.BaseDirectory, "pdf_to_images.py");
