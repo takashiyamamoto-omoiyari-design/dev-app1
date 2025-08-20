@@ -173,7 +173,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // 直近のworkIdから差分取得（履歴先頭）
             const history = loadUploadHistory();
             const latest = history && history.length > 0 ? history[0] : null;
-            if (!latest || !latest.workId) return;
+            const workId = (typeof currentWorkId === 'string' && currentWorkId) ? currentWorkId : (latest ? latest.workId : null);
+            if (!workId) return;
             // 現在ページ番号を推定（0-based）。UI側で保持している場合はそれを参照。
             let currentPage0 = 0;
             try {
@@ -207,7 +208,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                     credentials: 'include',
-                    body: JSON.stringify({ work_id: latest.workId })
+                    body: JSON.stringify({ work_id: workId })
                 });
                 const contentType = res.headers.get('content-type') || '';
                 if (res.ok) {
@@ -2943,12 +2944,13 @@ ${JSON.stringify({
             try {
                 const history = loadUploadHistory();
                 const latest = history && history.length > 0 ? history[0] : null;
-                if (!latest || !latest.workId) return;
+                const workId = (typeof currentWorkId === 'string' && currentWorkId) ? currentWorkId : (latest ? latest.workId : null);
+                if (!workId) return;
                 const samples = Math.max(1, Math.min( (parseInt(synthSamples?.value)||3), 100));
                 const diffs = (window.lastDiffResult||[]).map(d => ({ page_no: d.page_no, diff_text: d.diff_text||d.details||'' }));
                 const res = await fetch(getBasePath() + '/api/synthetic/generate-jsonl', {
                     method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'include',
-                    body: JSON.stringify({ work_id: latest.workId, samples, diffs })
+                    body: JSON.stringify({ work_id: workId, samples, diffs })
                 });
                 if (!res.ok) throw new Error('generate-jsonl failed');
                 const data = await res.json();

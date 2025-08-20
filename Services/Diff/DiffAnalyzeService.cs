@@ -143,7 +143,9 @@ namespace AzureRag.Services.Diff
             }
             Directory.CreateDirectory(genBaseOut);
             bool triedGeneration = false;
-            string generationDir = null; // この分析実行内で固定
+            // work_idやファイルIDに紐づく専用ディレクトリに固定（誤流用防止）
+            string workScoped = Path.GetFileNameWithoutExtension(info?.OriginalFileName ?? workId) ?? workId;
+            string generationDir = Path.Combine(genBaseOut, "pdf_gen_" + workScoped + "_" + genStamp);
             string genStamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
 
             // 画像自動生成に備え、必要依存が無ければ可能な範囲で導入を試みる
@@ -176,8 +178,8 @@ namespace AzureRag.Services.Diff
                     // 画像パスはストレージ/tmp配下に生成済みのPNGがあればそれを使う。無ければスキップ。
                     // 既存パイプラインでは images ディレクトリや tmp/pdf_*/ に出力されることがある。
                     // ここでは単純に見つかった最初の候補を使う。
-                    // この分析実行内での探索ディレクトリ: 生成済みであれば generationDir、無ければ共有ルート
-                    var dir = generationDir ?? genBaseOut;
+                    // この分析実行内での探索ディレクトリ: work_id専用の generationDir のみを参照
+                    var dir = generationDir;
                     string[] candidates = Array.Empty<string>();
                     if (Directory.Exists(dir))
                     {
@@ -188,7 +190,6 @@ namespace AzureRag.Services.Diff
                     {
                         try
                         {
-                            generationDir = generationDir ?? Path.Combine(genBaseOut, "pdf_gen_" + genStamp);
                             Directory.CreateDirectory(generationDir);
                             // python3 pdf_to_images.py <pdf> <outDir> <fileId> <original>
                             var scriptPath = Path.Combine(AppContext.BaseDirectory, "pdf_to_images.py");
@@ -223,7 +224,7 @@ namespace AzureRag.Services.Diff
                             _logger?.LogWarning(pex, "[Diff] 画像自動生成に失敗");
                         }
                     }
-                    // すでに一度生成済みで、dir が共有ルートのままなら、生成先固定ディレクトリも探索
+                    // すでに一度生成済みで、固定先を再探索
                     if (candidates.Length == 0 && triedGeneration && !string.IsNullOrEmpty(generationDir) && Directory.Exists(generationDir))
                     {
                         candidates = Directory.GetFiles(generationDir, "*page_" + page + ".png", SearchOption.AllDirectories);
