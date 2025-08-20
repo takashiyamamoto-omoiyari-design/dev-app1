@@ -70,9 +70,9 @@ namespace AzureRag.Services.Diff
                 if (string.IsNullOrEmpty(s)) return string.Empty;
                 var t = s.Replace("\r\n", "\n").Replace("\r", "\n");
                 // ```mermaid ... ``` ブロック除去
-                t = Regex.Replace(t, "```mermaid[\s\S]*?```", string.Empty, RegexOptions.IgnoreCase);
+                t = Regex.Replace(t, @"```mermaid[\s\S]*?```", string.Empty, RegexOptions.IgnoreCase);
                 // 余計な空白を畳み込み
-                t = Regex.Replace(t, "[\t\u00A0]+", " ");
+                t = Regex.Replace(t, @"[\t\u00A0]+", " ");
                 return t.Trim();
             }
 
