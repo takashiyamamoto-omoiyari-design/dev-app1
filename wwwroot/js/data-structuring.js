@@ -121,6 +121,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const fewshotType = document.getElementById('fewshot-type');
     const diffResults = document.getElementById('diff-results');
     const rightPanelTitle = document.getElementById('right-panel-title');
+    const synthOpenBtn = document.getElementById('open-synth-btn');
+    const synthModal = document.getElementById('synth-modal');
+    const synthModalHeader = document.getElementById('synth-modal-header');
+    const synthCloseBtn = document.getElementById('synth-modal-close');
+    const synthSamples = document.getElementById('synth-samples');
+    const synthGenBtn = document.getElementById('synth-generate-btn');
+    const synthDlBtn = document.getElementById('synth-download-btn');
+    const synthJsonl = document.getElementById('synth-jsonl');
 
     function openRightPanelForDiff() {
         if (rightSidebar) rightSidebar.classList.add('open');
@@ -131,6 +139,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // 右パネルのメッセージ入力と注意文言を非表示
         const chatInputContainer = document.querySelector('#rightSidebar .chat-input-container');
         if (chatInputContainer) chatInputContainer.style.display = 'none';
+        // 合成データ作成ボタンを表示
+        if (synthOpenBtn) synthOpenBtn.style.display = '';
     }
 
     function renderDiffListHtml(list) {
@@ -2883,7 +2893,82 @@ ${JSON.stringify({
             if (diffResultsEl) diffResultsEl.style.display = 'none';
             const rightPanelTitleEl = document.getElementById('right-panel-title');
             if (rightPanelTitleEl) rightPanelTitleEl.textContent = 'AIアシスタント';
+            // 合成データ作成ボタンは差分モード限定のため非表示
+            if (synthOpenBtn) synthOpenBtn.style.display = 'none';
         }
+    }
+
+    // ドラッグ可能なモーダル（簡易実装）
+    (function initDraggableModal(){
+        if (!synthModal || !synthModalHeader) return;
+        let isDown = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+        synthModalHeader.addEventListener('mousedown', (e)=>{
+            isDown = true;
+            startX = e.clientX; startY = e.clientY;
+            const rect = synthModal.getBoundingClientRect();
+            startLeft = rect.left; startTop = rect.top;
+            e.preventDefault();
+        });
+        window.addEventListener('mousemove', (e)=>{
+            if (!isDown) return;
+            const dx = e.clientX - startX; const dy = e.clientY - startY;
+            synthModal.style.left = `${Math.max(8, startLeft + dx)}px`;
+            synthModal.style.top = `${Math.max(8, startTop + dy)}px`;
+            synthModal.style.right = 'auto';
+        });
+        window.addEventListener('mouseup', ()=>{ isDown = false; });
+    })();
+
+    // 合成データ作成ボタン -> モーダル表示
+    if (synthOpenBtn && synthModal) {
+        synthOpenBtn.addEventListener('click', ()=>{
+            synthModal.style.display = '';
+            // 直近の差分をテキストにして下地として入れておく
+            try {
+                const items = window.lastDiffResult || [];
+                const text = Array.isArray(items) ? items.map(d => (d.diff_text||d.details||'')).join('\n\n') : '';
+                if (synthJsonl && !synthJsonl.value) synthJsonl.value = text ? `# diff summary preview (not JSONL)\n${text.substring(0,800)}...` : '';
+            } catch {}
+        });
+    }
+    if (synthCloseBtn && synthModal) {
+        synthCloseBtn.addEventListener('click', ()=>{ synthModal.style.display = 'none'; });
+    }
+
+    // 生成API呼び出し
+    if (synthGenBtn) {
+        synthGenBtn.addEventListener('click', async ()=>{
+            try {
+                const history = loadUploadHistory();
+                const latest = history && history.length > 0 ? history[0] : null;
+                if (!latest || !latest.workId) return;
+                const samples = Math.max(1, Math.min( (parseInt(synthSamples?.value)||3), 100));
+                const diffs = (window.lastDiffResult||[]).map(d => ({ page_no: d.page_no, diff_text: d.diff_text||d.details||'' }));
+                const res = await fetch(getBasePath() + '/api/synthetic/generate-jsonl', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'include',
+                    body: JSON.stringify({ work_id: latest.workId, samples, diffs })
+                });
+                if (!res.ok) throw new Error('generate-jsonl failed');
+                const data = await res.json();
+                if (synthJsonl) synthJsonl.value = data.jsonl || '';
+            } catch (e) {
+                if (synthJsonl) synthJsonl.value = `# エラー: ${e.message}`;
+            }
+        });
+    }
+
+    // ダウンロード
+    if (synthDlBtn && synthJsonl) {
+        synthDlBtn.addEventListener('click', ()=>{
+            try {
+                const blob = new Blob([synthJsonl.value||''], { type: 'application/jsonl;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'synthetic_dataset.jsonl';
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch {}
+        });
     }
 
     // ユーザーメッセージの追加
