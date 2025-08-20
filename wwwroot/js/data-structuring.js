@@ -128,6 +128,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const chatMessagesEl = document.getElementById('chat-messages');
         if (chatMessagesEl) chatMessagesEl.style.display = 'none';
         if (diffResults) diffResults.style.display = '';
+        // 右パネルのメッセージ入力と注意文言を非表示
+        const chatInputContainer = document.querySelector('#rightSidebar .chat-input-container');
+        if (chatInputContainer) chatInputContainer.style.display = 'none';
     }
 
     function renderDiffListHtml(list) {
@@ -150,83 +153,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // 差分分析（右パネルに表示）: 既存のモーダルは残すが、右パネル表示を優先
     if (diffAnalyzeBtn) {
         diffAnalyzeBtn.addEventListener('click', async () => {
-            try {
+            // 変更: モーダルは表示しない
+            if (diffModal) diffModal.style.display = 'none';
+            // 右パネルでの表示に切替
+            if (typeof openRightPanelForDiff === 'function') {
                 openRightPanelForDiff();
                 if (diffResults) diffResults.innerHTML = '<div style="padding:12px; color:#6b7280;">差分を取得しています...</div>';
-
-                // 直近のworkIdから差分取得（履歴先頭）
-                const history = loadUploadHistory();
-                const latest = history && history.length > 0 ? history[0] : null;
-                if (!latest || !latest.workId) return;
-
-                // 左パネルのページ一覧から実表示ページ数を取得
-                let visiblePageCount = 0;
-                try {
-                    const pageItems = document.querySelectorAll('#page-list .page-item');
-                    visiblePageCount = pageItems ? pageItems.length : 0;
-                } catch {}
-
-                const res = await fetch(getBasePath() + '/api/ocr/diff-analyze', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                    credentials: 'include',
-                    body: JSON.stringify({ work_id: latest.workId })
-                });
-                const contentType = res.headers.get('content-type') || '';
-                if (res.ok) {
-                    if (contentType.includes('application/json')) {
-                        const data = await res.json();
-                        const list = Array.isArray(data.page_diffs) ? data.page_diffs : [];
-                        // 実際に左パネルに表示されているページ数で上限をかける
-                        const filtered = (visiblePageCount > 0)
-                            ? list.filter(d => ((d.page_no ?? 0) + 1) <= visiblePageCount)
-                            : list;
-                        if (diffResults) diffResults.innerHTML = renderDiffListHtml(filtered);
-                    } else {
-                        if (diffResults) diffResults.innerHTML = '<div style="padding:12px; color:#b91c1c;">JSON以外の応答を受信しました（ログイン切れの可能性）</div>';
-                    }
-                } else if (res.status === 401) {
-                    if (diffResults) diffResults.innerHTML = '<div style="padding:12px; color:#b91c1c;">未認証です。再ログインしてください。</div>';
-                } else if (res.status === 403) {
-                    if (diffResults) diffResults.innerHTML = '<div style="padding:12px; color:#b91c1c;">アクセス権限がありません。</div>';
-                } else {
-                    const text = contentType.includes('application/json') ? JSON.stringify(await res.json()) : (await res.text()).slice(0, 300);
-                    if (diffResults) diffResults.innerHTML = '<div style="padding:12px; color:#b91c1c;">差分分析取得に失敗しました</div>';
-                    console.error('diff-analyze error response:', res.status, text);
-                }
-            } catch (e) {
-                if (diffResults) diffResults.innerHTML = '<div style="padding:12px; color:#b91c1c;">差分分析呼び出しでエラーが発生しました</div>';
             }
-        });
-    }
-
-    // fewshot UI 表示制御と候補取得
-    if (optFewshot && fewshotType) {
-        optFewshot.addEventListener('change', async () => {
-            if (optFewshot.checked) {
-                fewshotType.style.display = '';
-                try {
-                    const res = await fetch(getBasePath() + '/api/user/types', { credentials: 'include' });
-                    if (res.ok) {
-                        const data = await res.json();
-                        const types = Array.isArray(data.types) ? data.types : [];
-                        fewshotType.innerHTML = '<option value="">タイプを選択</option>' +
-                            types.map(t => `<option value="${t}">${t}</option>`).join('');
-                    }
-                } catch (e) {
-                    console.error('ユーザータイプ取得に失敗', e);
-                }
-            } else {
-                fewshotType.style.display = 'none';
-                fewshotType.value = '';
-            }
-        });
-    }
-
-    // 差分モーダル オープン/クローズ
-    if (diffAnalyzeBtn && diffModal && diffModalClose) {
-        diffAnalyzeBtn.addEventListener('click', async () => {
-            diffModal.style.display = 'block';
             // 直近のworkIdから差分取得（履歴先頭）
             const history = loadUploadHistory();
             const latest = history && history.length > 0 ? history[0] : null;
@@ -275,21 +208,25 @@ document.addEventListener('DOMContentLoaded', function() {
                         const filtered = (visiblePageCount > 0)
                             ? list.filter(d => ((d.page_no ?? 0) + 1) <= visiblePageCount)
                             : list;
-                        renderPageDiffsMinimal(filtered);
+                        if (typeof renderDiffListHtml === 'function' && diffResults) {
+                            diffResults.innerHTML = renderDiffListHtml(filtered);
+                        } else if (typeof renderPageDiffsMinimal === 'function') {
+                            renderPageDiffsMinimal(filtered);
+                        }
                     } else {
-                        pageDiffList.innerHTML = '<div style="padding:12px; color:#b91c1c;">JSON以外の応答を受信しました（ログイン切れの可能性）</div>';
+                        if (diffResults) diffResults.innerHTML = '<div style="padding:12px; color:#b91c1c;">JSON以外の応答を受信しました（ログイン切れの可能性）</div>';
                     }
                 } else if (res.status === 401) {
-                    pageDiffList.innerHTML = '<div style="padding:12px; color:#b91c1c;">未認証です。再ログインしてください。</div>';
+                    if (diffResults) diffResults.innerHTML = '<div style="padding:12px; color:#b91c1c;">未認証です。再ログインしてください。</div>';
                 } else if (res.status === 403) {
-                    pageDiffList.innerHTML = '<div style="padding:12px; color:#b91c1c;">アクセス権限がありません。</div>';
+                    if (diffResults) diffResults.innerHTML = '<div style="padding:12px; color:#b91c1c;">アクセス権限がありません。</div>';
                 } else {
                     const text = contentType.includes('application/json') ? JSON.stringify(await res.json()) : (await res.text()).slice(0, 300);
-                    pageDiffList.innerHTML = '<div style="padding:12px; color:#b91c1c;">差分分析取得に失敗しました</div>';
+                    if (diffResults) diffResults.innerHTML = '<div style="padding:12px; color:#b91c1c;">差分分析取得に失敗しました</div>';
                     console.error('diff-analyze error response:', res.status, text);
                 }
             } catch (e) {
-                pageDiffList.innerHTML = '<div style="padding:12px; color:#b91c1c;">差分分析呼び出しでエラーが発生しました</div>';
+                if (diffResults) diffResults.innerHTML = '<div style="padding:12px; color:#b91c1c;">差分分析呼び出しでエラーが発生しました</div>';
             }
         });
         diffModalClose.addEventListener('click', () => {
@@ -300,25 +237,27 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function renderPageDiffsMinimal(list) {
-        if (!pageDiffList) return;
-        if (!Array.isArray(list) || list.length === 0) {
-            pageDiffList.innerHTML = '<div style="padding:12px; color:#6b7280;">差分はありません</div>';
-            return;
-        }
-        // ページ番号順に並べて、各ページの本文を箇条書きで表示
-        const sorted = [...list].sort((a,b)=> (a.page_no??0) - (b.page_no??0));
-        pageDiffList.innerHTML = sorted.map(d => {
-            const raw = d.diff_text || d.details || '';
-            // 先頭行の [p.X] 差分 を除去
-            const cleaned = raw.replace(/^\[p\.(\d+)\]\s*差分\s*\n?/, '');
-            const lines = cleaned.split(/\r?\n/).filter(l => l.trim().length > 0);
-            const bullets = lines.map(l => `- ${escapeHtml(l)}`).join('\n');
-            return `<div style="border-bottom:1px solid #e5e7eb; padding:12px 14px;">
-                <div style="font-weight:600; margin-bottom:6px;">${(d.page_no ?? 0) + 1}枚目</div>
-                <div style="white-space:pre-wrap; line-height:1.6; color:#111827;">${bullets}</div>
-            </div>`;
-        }).join('');
+    // fewshot UI 表示制御と候補取得
+    if (optFewshot && fewshotType) {
+        optFewshot.addEventListener('change', async () => {
+            if (optFewshot.checked) {
+                fewshotType.style.display = '';
+                try {
+                    const res = await fetch(getBasePath() + '/api/user/types', { credentials: 'include' });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const types = Array.isArray(data.types) ? data.types : [];
+                        fewshotType.innerHTML = '<option value="">タイプを選択</option>' +
+                            types.map(t => `<option value="${t}">${t}</option>`).join('');
+                    }
+                } catch (e) {
+                    console.error('ユーザータイプ取得に失敗', e);
+                }
+            } else {
+                fewshotType.style.display = 'none';
+                fewshotType.value = '';
+            }
+        });
     }
 
     // 合成データ作成（S3出力）
@@ -621,7 +560,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const synonymDict = localStorage.getItem('dsSynonyms') || '';
         return synonymDict;
     }
-    
     // 特定のキーワードに関連するシノニムを検索する関数
     function findSynonymsForKeyword(keyword) {
         const synonyms = [];
@@ -1198,7 +1136,6 @@ ${JSON.stringify({
             emotions: ['怒り', '不安']
         };
     }
-    
     // 辞書アイコンのローディングアニメーション要素を作成
     function createDictionaryAnimation() {
         const loaderContainer = document.createElement('div');
@@ -1783,7 +1720,6 @@ ${JSON.stringify({
             return null;
         }
     }
-
     async function sendChatMessage(message, docId) {
         try {
             console.log('🚀 STEP 1: sendChatMessage開始');
@@ -2401,7 +2337,6 @@ ${JSON.stringify({
             console.error('UI初期化中にエラーが発生しました:', error);
         }
     }
-
     // 全PDFドキュメントの先読みを実行する関数
     async function prefetchAllPdfDocuments() {
         try {
@@ -2829,7 +2764,7 @@ ${JSON.stringify({
         createPdfListForNavigation();
     }
 
-    // 特定のPDFのキャッシングを開始する関数（アップロード完了後の自動キャッシュ用）
+    // 特定のPDFのキャッシュを開始する関数（アップロード完了後の自動キャッシュ用）
     function startCachingPdf(pdfBaseName) {
         // 検索バーの横にキャッシュ進捗表示エリアがなければ作成
         createCacheProgressDisplay();
@@ -4027,7 +3962,6 @@ ${JSON.stringify({
 複数の参照ドキュメントを適切に組み合わせて包括的な回答を提供します
 質問に直接関係する部分に焦点を当てて回答します
 参照ドキュメントから一部の情報しか見つからない場合:
-
 見つかった情報を使って可能な限り回答を提供します
 「参照ドキュメントには○○についての情報のみ含まれています」と断りを入れます
 決して「回答できない」と判断せず、部分的な情報でも共有します
