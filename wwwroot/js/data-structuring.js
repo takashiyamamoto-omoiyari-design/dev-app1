@@ -6240,6 +6240,30 @@ ${JSON.stringify({
                 });
             }
             
+            // ページ配列（page_text_list 形式）の処理: 各要素が text を持つ
+            if (pages[0].text) {
+                console.log('page_text_list 形式のデータを検出（各要素がtextを保持）');
+                return pages.map(p => {
+                    const pageNo = (p.pageNumber !== undefined && p.pageNumber !== null) ? p.pageNumber : parseInt((p.id||'').replace('page_','')) || 0;
+                    const docId = p.filepath || `${p.id}_0` || `page_${pageNo}_0`;
+                    return {
+                        id: p.id || `page_${pageNo}`,
+                        displayName: p.name || `ページ ${pageNo + 1}`,
+                        pageNumber: pageNo,
+                        documents: [
+                            {
+                                id: docId,
+                                name: p.name || `ページ ${pageNo + 1}`,
+                                text: p.text,
+                                pageNumber: pageNo,
+                                chunkNumber: 0,
+                                filepath: p.filepath || `page_${pageNo}_0`
+                            }
+                        ]
+                    };
+                });
+            }
+
             // 従来の形式の処理
             console.log('従来形式のデータ処理');
             
