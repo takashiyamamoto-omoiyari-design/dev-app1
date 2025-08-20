@@ -123,9 +123,15 @@ namespace AzureRag.Services.Diff
 
             var pageMaxOriginal = originalByPage.Keys.DefaultIfEmpty(1).Max();
             var pageMaxExtracted = extractedByPage.Keys.DefaultIfEmpty(1).Max();
-            // 表示対象は原本PDFのページ数に限定（抽出側が多くても増やさない）
+            // まずは原本テキスト抽出ベースのページ数
             var pageMax = pageMaxOriginal;
-            _logger?.LogInformation("[Diff] Page bounds: original={Original}, extracted={Extracted}, used={Used}", pageMaxOriginal, pageMaxExtracted, pageMax);
+            // 可能ならpdfinfoで厳密なページ数を取得
+            var pdfInfoPages = await TryGetPdfPageCountAsync(path);
+            if (pdfInfoPages.HasValue && pdfInfoPages.Value > 0)
+            {
+                pageMax = pdfInfoPages.Value;
+            }
+            _logger?.LogInformation("[Diff] Page bounds: originalTextHeuristic={Original}, extracted={Extracted}, pdfinfo={PdfInfo}, used={Used}", pageMaxOriginal, pageMaxExtracted, pdfInfoPages ?? -1, pageMax);
             var result = new DiffAnalyzeResult();
 
             // 画像生成出力ルートと一回生成の制御
@@ -313,6 +319,39 @@ namespace AzureRag.Services.Diff
             catch (Exception ex)
             {
                 _logger?.LogWarning(ex, "[Deps] 依存性チェック/導入中に例外");
+            }
+        }
+
+        private async Task<int?> TryGetPdfPageCountAsync(string pdfPath)
+        {
+            try
+            {
+                // pdfinfo -meta <file> などで総ページ数を取得
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "bash",
+                    Arguments = "-lc \"pdfinfo \"" + pdfPath.Replace("\"", "\\\"") + "\" | awk -F: '/^Pages/ { gsub(/\\r|\\n/,\"\"); print $2 }' | xargs echo\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                using var p = Process.Start(psi);
+                if (p == null) return null;
+                var so = await p.StandardOutput.ReadToEndAsync();
+                var se = await p.StandardError.ReadToEndAsync();
+                await p.WaitForExitAsync();
+                if (!string.IsNullOrWhiteSpace(se)) _logger?.LogDebug("[Diff] pdfinfo stderr: {Err}", se);
+                if (int.TryParse(so?.Trim(), out var pages) && pages > 0)
+                {
+                    return pages;
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogDebug(ex, "[Diff] pdfinfo 取得に失敗");
+                return null;
             }
         }
 
