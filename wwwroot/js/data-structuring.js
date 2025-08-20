@@ -176,17 +176,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                     credentials: 'include',
-                    body: JSON.stringify({ work_id: latest.workId, page_no: currentPage0 })
+                    body: JSON.stringify({ work_id: latest.workId })
                 });
                 const contentType = res.headers.get('content-type') || '';
                 if (res.ok) {
                     if (contentType.includes('application/json')) {
                         const data = await res.json();
-                        // 念のためクライアント側でも対象ページだけを描画
                         const list = Array.isArray(data.page_diffs) ? data.page_diffs : [];
-                        // サーバーが単一ページだけ返す想定だが、念のため一致ページでフィルタ
-                        const filtered = list.filter(d => (d.page_no ?? -1) === currentPage0);
-                        renderPageDiffsMinimal(filtered.length > 0 ? filtered : list);
+                        renderPageDiffsMinimal(list);
                     } else {
                         pageDiffList.innerHTML = '<div style="padding:12px; color:#b91c1c;">JSON以外の応答を受信しました（ログイン切れの可能性）</div>';
                     }
@@ -217,15 +214,16 @@ document.addEventListener('DOMContentLoaded', function() {
             pageDiffList.innerHTML = '<div style="padding:12px; color:#6b7280;">差分はありません</div>';
             return;
         }
-        // ページ番号順に並べて、本文のみを表示（見出しは非表示）
+        // ページ番号順に並べて、各ページの本文を箇条書きで表示
         const sorted = [...list].sort((a,b)=> (a.page_no??0) - (b.page_no??0));
         pageDiffList.innerHTML = sorted.map(d => {
             const raw = d.diff_text || d.details || '';
             // 先頭行の [p.X] 差分 を除去
             const cleaned = raw.replace(/^\[p\.(\d+)\]\s*差分\s*\n?/, '');
-            const body = escapeHtml(cleaned);
+            const lines = cleaned.split(/\r?\n/).filter(l => l.trim().length > 0);
+            const bullets = lines.map(l => `- ${escapeHtml(l)}`).join('\n');
             return `<div style="border-bottom:1px solid #e5e7eb; padding:12px 14px;">
-                <div style="white-space:pre-wrap; line-height:1.5; color:#111827;">${body}</div>
+                <div style="white-space:pre-wrap; line-height:1.6; color:#111827;">${bullets}</div>
             </div>`;
         }).join('');
     }
