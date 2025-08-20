@@ -54,4 +54,11 @@
     <PackageReference Include="AWSSDK.BedrockRuntime" Version="3.7.400.44" />
   </ItemGroup>
 
+  <!-- ランタイムで使用するPythonスクリプトを出力に含める -->
+  <ItemGroup>
+    <Content Include="pdf_to_images.py">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
