@@ -153,11 +153,22 @@ document.addEventListener('DOMContentLoaded', function() {
             // 現在ページ番号を推定（0-based）。UI側で保持している場合はそれを参照。
             let currentPage0 = 0;
             try {
-                // ページグループのUIから選択中ページを推定
-                const active = document.querySelector('[data-current-page]');
-                if (active) {
-                    const v = parseInt(active.getAttribute('data-current-page'));
-                    if (!Number.isNaN(v)) currentPage0 = Math.max(0, v);
+                // 1) 選択中ドキュメントから取得（selectDocumentGroup/selectDocumentで設定）
+                if (typeof selectedDocument === 'object' && selectedDocument) {
+                    if (typeof selectedDocument.pageNumber === 'number') {
+                        currentPage0 = Math.max(0, selectedDocument.pageNumber - 1);
+                    }
+                }
+                // 2) UIのアクティブ要素から推定（見出しテキストを解析）
+                if (currentPage0 === 0) {
+                    const activeEl = document.querySelector('.page-item.active .page-name');
+                    if (activeEl && activeEl.textContent) {
+                        const m = activeEl.textContent.match(/ページ\s*(\d+)/);
+                        if (m && m[1]) {
+                            const pn = parseInt(m[1]);
+                            if (!Number.isNaN(pn)) currentPage0 = Math.max(0, pn - 1);
+                        }
+                    }
                 }
             } catch {}
             try {
@@ -173,6 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const data = await res.json();
                         // 念のためクライアント側でも対象ページだけを描画
                         const list = Array.isArray(data.page_diffs) ? data.page_diffs : [];
+                        // サーバーが単一ページだけ返す想定だが、念のため一致ページでフィルタ
                         const filtered = list.filter(d => (d.page_no ?? -1) === currentPage0);
                         renderPageDiffsMinimal(filtered.length > 0 ? filtered : list);
                     } else {
@@ -205,13 +217,14 @@ document.addEventListener('DOMContentLoaded', function() {
             pageDiffList.innerHTML = '<div style="padding:12px; color:#6b7280;">差分はありません</div>';
             return;
         }
-        // ページ番号順に並べて、ページ見出し + details（またはdiff_text）だけを表示
+        // ページ番号順に並べて、本文のみを表示（見出しは非表示）
         const sorted = [...list].sort((a,b)=> (a.page_no??0) - (b.page_no??0));
         pageDiffList.innerHTML = sorted.map(d => {
-            const header = `ページ ${(d.page_no ?? 0) + 1}`;
-            const body = escapeHtml(d.diff_text || d.details || '');
+            const raw = d.diff_text || d.details || '';
+            // 先頭行の [p.X] 差分 を除去
+            const cleaned = raw.replace(/^\[p\.(\d+)\]\s*差分\s*\n?/, '');
+            const body = escapeHtml(cleaned);
             return `<div style="border-bottom:1px solid #e5e7eb; padding:12px 14px;">
-                <div style="font-weight:600; margin-bottom:6px;">${header}</div>
                 <div style="white-space:pre-wrap; line-height:1.5; color:#111827;">${body}</div>
             </div>`;
         }).join('');

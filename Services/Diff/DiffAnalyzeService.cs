@@ -212,7 +212,7 @@ namespace AzureRag.Services.Diff
                     {
                         var png = candidates[0];
                         var bytes = await File.ReadAllBytesAsync(png);
-                        var sys = "あなたはPDFページ画像と抽出テキストの差分を日本語で簡潔に説明するアシスタントです。抽出テキストに欠けている重要箇所、過剰に追加された箇所を列挙してください。";
+                        var sys = "あなたはPDFページ画像と抽出テキストの差分を日本語で簡潔に説明するアシスタントです。抽出テキストに欠けている重要箇所、過剰に追加された箇所を列挙してください。元文書の画像を忠実に一言一句間違いなく書き出せているかチェックしてほしい。画像については人間がわかるように極力細かく説明できているかチェックしてほしい。※元文書に存在しない指摘は必要なし。";
                         var user = $"これはPDFのp.{page}です。以下は抽出テキストです:\n\n" + ext + "\n\n差分の要点だけを箇条書きで示してください。";
                         visionText = await _anthropic.GenerateVisionAsync(sys, user, bytes, "png");
                         if (!string.IsNullOrEmpty(visionText))
