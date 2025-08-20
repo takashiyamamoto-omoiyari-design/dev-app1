@@ -138,7 +138,7 @@ namespace AzureRag.Services
                 var request = new
                 {
                     anthropic_version = "bedrock-2023-05-31",
-                    max_tokens = 1000,
+                    max_tokens = 10000,
                     system = effectiveSystemPrompt,
                     messages = new[]
                     {

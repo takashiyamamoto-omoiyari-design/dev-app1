@@ -218,6 +218,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         const filtered = (visiblePageCount > 0)
                             ? list.filter(d => ((d.page_no ?? 0) + 1) <= visiblePageCount)
                             : list;
+                        // 後続の合成データ作成で利用できるよう保持
+                        window.lastDiffResult = filtered;
                         if (typeof renderDiffListHtml === 'function' && diffResults) {
                             diffResults.innerHTML = renderDiffListHtml(filtered);
                         } else if (typeof renderPageDiffsMinimal === 'function') {
