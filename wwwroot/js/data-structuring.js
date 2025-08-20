@@ -9,6 +9,18 @@ const getBasePath = () => {
     return '';
 };
 
+// HTMLエスケープ（描画時のXSS防止と文字化け防止）
+function escapeHtml(str) {
+    if (str == null) return '';
+    const s = String(str);
+    return s
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // アップロード履歴を保存する配列
 let uploadHistory = [];
 
