@@ -172,6 +172,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch {}
             try {
+                // 左パネルのページ一覧から実表示ページ数を取得
+                let visiblePageCount = 0;
+                try {
+                    const pageItems = document.querySelectorAll('#page-list .page-item');
+                    visiblePageCount = pageItems ? pageItems.length : 0;
+                } catch {}
+
                 const res = await fetch(getBasePath() + '/api/ocr/diff-analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
@@ -183,7 +190,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (contentType.includes('application/json')) {
                         const data = await res.json();
                         const list = Array.isArray(data.page_diffs) ? data.page_diffs : [];
-                        renderPageDiffsMinimal(list);
+                        // 実際に左パネルに表示されているページ数で上限をかける
+                        const filtered = (visiblePageCount > 0)
+                            ? list.filter(d => ((d.page_no ?? 0) + 1) <= visiblePageCount)
+                            : list;
+                        renderPageDiffsMinimal(filtered);
                     } else {
                         pageDiffList.innerHTML = '<div style="padding:12px; color:#b91c1c;">JSON以外の応答を受信しました（ログイン切れの可能性）</div>';
                     }
