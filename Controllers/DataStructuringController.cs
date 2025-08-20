@@ -1360,69 +1360,25 @@ namespace AzureRag.Controllers
                 {
                     // キャッシュ付きでAutoStructureServiceからデータを取得
                     var structuredData = await GetStructuredDataWithCache(workId);
-                    //ff3bfb43437a02fde082fdc2af4a90e8 Sansan-20250503kessannsetumei.pdf
-                    //c56a423168fc5d740c57fab5848031ae 構造化対象取説（na_lx129b）.pdf
-                    
-                    // chunk_listが利用可能かチェック
-                    if (structuredData.ChunkList != null && structuredData.ChunkList.Count > 0)
+
+                    // 1) page_text_list を最優先で使用
+                    if (structuredData.PageTextList != null && structuredData.PageTextList.Count > 0)
                     {
-                        
-                        // ログ出力
-                        for (int i = 0; i < Math.Min(3, structuredData.ChunkList.Count); i++)
-                        {
-                            var sampleChunk = structuredData.ChunkList[i];
-                        }
-                        
-                        // ページ番号でグループ化
-                        var pageGroups = structuredData.ChunkList
-                            .GroupBy(chunk => chunk.PageNo)
-                            .Select(group => new
+                        var pageItems = structuredData.PageTextList
+                            .OrderBy(p => p.PageNo)
+                            .Select(p => new
                             {
-                                id = $"page_{group.Key}",
-                                name = $"{group.Key + 1}枚目",
-                                pageNumber = group.Key,
-                                documents = group.Select(chunk => new
-                                {
-                                    id = $"chunk_{chunk.PageNo}_{chunk.ChunkNo}",
-                                    name = $"チャンク #{chunk.ChunkNo}",
-                                    text = chunk.Chunk,
-                                    filepath = $"chunk_{chunk.PageNo}_{chunk.ChunkNo}",
-                                    pageNumber = chunk.PageNo,
-                                    chunkNumber = chunk.ChunkNo,
-                                    originalIndex = chunk.ChunkNo
-                                }).OrderBy(c => c.chunkNumber).ToList()
-                            })
-                            .OrderBy(g => g.pageNumber)
-                            .ToList();
-                        
-                        
-                        // シノニムデータの詳細ログ出力（コントローラー側）
-                        if (structuredData.SynonymList != null && structuredData.SynonymList.Count > 0)
-                        {
-                            for (int i = 0; i < Math.Min(3, structuredData.SynonymList.Count); i++)
-                            {
-                                var synonymItem = structuredData.SynonymList[i];
-                                if (synonymItem?.Synonyms != null)
-                                {
-                                }
-                            }
-                        }
-                        
-                        if (structuredData.SynonymData != null && structuredData.SynonymData.Count > 0)
-                        {
-                            for (int i = 0; i < Math.Min(3, structuredData.SynonymData.Count); i++)
-                            {
-                                var synonymDataItem = structuredData.SynonymData[i];
-                            }
-                        }
-                        else
-                        {
-                        }
-                        
-                        // 処理進捗情報を含めたレスポンスを返す
+                                id = $"page_{p.PageNo}",
+                                name = $"{p.PageNo + 1}枚目",
+                                filepath = $"page_{p.PageNo}_0",
+                                text = p.Text,
+                                pageNumber = p.PageNo,
+                                originalIndex = 0
+                            }).ToList();
+
                         var response = new
                         {
-                            pages = pageGroups,
+                            pages = pageItems,
                             processing_status = new
                             {
                                 page_no = structuredData.PageNo,
@@ -1434,11 +1390,9 @@ namespace AzureRag.Controllers
                             synonym_list = structuredData.SynonymList,
                             synonym = structuredData.SynonymData
                         };
-                        
-                        
                         return Ok(response);
                     }
-                    // 従来のtext_listを使用（フォールバック）
+                    // 2) text_list を使用（従来フォールバック）
                     else if (structuredData.TextList != null && structuredData.TextList.Count > 0)
                     {
                         
@@ -1575,6 +1529,47 @@ namespace AzureRag.Controllers
                         };
                         
                         
+                        return Ok(response);
+                    }
+                    // 3) chunk_list を最後のフォールバック（ページ毎に結合せず、従来通り）
+                    else if (structuredData.ChunkList != null && structuredData.ChunkList.Count > 0)
+                    {
+                        // ページ番号でグルーピング（簡易）
+                        var pageGroups = structuredData.ChunkList
+                            .GroupBy(chunk => chunk.PageNo)
+                            .Select(group => new
+                            {
+                                id = $"page_{group.Key}",
+                                name = $"{group.Key + 1}枚目",
+                                pageNumber = group.Key,
+                                documents = group.Select(chunk => new
+                                {
+                                    id = $"chunk_{chunk.PageNo}_{chunk.ChunkNo}",
+                                    name = $"チャンク #{chunk.ChunkNo}",
+                                    text = chunk.Chunk,
+                                    filepath = $"chunk_{chunk.PageNo}_{chunk.ChunkNo}",
+                                    pageNumber = chunk.PageNo,
+                                    chunkNumber = chunk.ChunkNo,
+                                    originalIndex = chunk.ChunkNo
+                                }).OrderBy(c => c.chunkNumber).ToList()
+                            })
+                            .OrderBy(g => g.pageNumber)
+                            .ToList();
+
+                        var response = new
+                        {
+                            pages = pageGroups,
+                            processing_status = new
+                            {
+                                page_no = structuredData.PageNo,
+                                max_page_no = structuredData.MaxPageNo,
+                                processing_state = structuredData.GetProcessingState().ToString(),
+                                return_code = structuredData.ReturnCode,
+                                error_detail = structuredData.ErrorDetail
+                            },
+                            synonym_list = structuredData.SynonymList,
+                            synonym = structuredData.SynonymData
+                        };
                         return Ok(response);
                     }
                     else

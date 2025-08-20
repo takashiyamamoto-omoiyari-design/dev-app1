@@ -720,6 +720,10 @@ namespace AzureRag.Services
         [JsonPropertyName("text_list")]
         public List<TextItem> TextList { get; set; }
 
+        // ページ単位のテキスト（1ページ=1要素）
+        [JsonPropertyName("page_text_list")]
+        public List<TextItem> PageTextList { get; set; }
+
         [JsonPropertyName("chunk_list")]
         public List<ChunkItem> ChunkList { get; set; }
 
