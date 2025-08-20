@@ -145,8 +145,8 @@ namespace AzureRag.Services.Diff
             bool triedGeneration = false;
             // work_idやファイルIDに紐づく専用ディレクトリに固定（誤流用防止）
             string workScoped = Path.GetFileNameWithoutExtension(info?.OriginalFileName ?? workId) ?? workId;
-            string generationDir = Path.Combine(genBaseOut, "pdf_gen_" + workScoped + "_" + genStamp);
             string genStamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+            string generationDir = Path.Combine(genBaseOut, "pdf_gen_" + workScoped + "_" + genStamp);
 
             // 画像自動生成に備え、必要依存が無ければ可能な範囲で導入を試みる
             await EnsurePdfImageDependenciesAsync();
