@@ -41,14 +41,18 @@ namespace AzureRag.Controllers
                 }
 
                 var user = User?.Identity?.Name;
+                _logger.LogInformation("[DiffAnalyze] 呼び出し開始: user={User}, work_id={WorkId}", user, request.work_id);
                 if (string.IsNullOrEmpty(user)) return Unauthorized();
 
                 if (!await _authorizationService.CanAccessWorkIdAsync(user, request.work_id))
                 {
+                    _logger.LogWarning("[DiffAnalyze] 権限なし: user={User}, work_id={WorkId}", user, request.work_id);
                     return StatusCode(403, new { error = "アクセス権限がありません" });
                 }
 
+                _logger.LogInformation("[DiffAnalyze] 差分処理開始: work_id={WorkId}", request.work_id);
                 var result = await _diffService.AnalyzeAsync(request.work_id, user);
+                _logger.LogInformation("[DiffAnalyze] 差分処理完了: work_id={WorkId}, page_diffs={Count}", request.work_id, result?.PageDiffs?.Count ?? 0);
 
                 return Ok(new
                 {
@@ -58,11 +62,12 @@ namespace AzureRag.Controllers
             }
             catch (System.IO.FileNotFoundException)
             {
+                _logger.LogWarning("[DiffAnalyze] 原本PDF未保存: work_id={WorkId}", request?.work_id);
                 return NotFound(new { error = "保存された原本PDFが見つかりません" });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "差分分析中にエラー");
+                _logger.LogError(ex, "[DiffAnalyze] 例外発生: work_id={WorkId}", request?.work_id);
                 return StatusCode(500, new { error = "内部エラー" });
             }
         }

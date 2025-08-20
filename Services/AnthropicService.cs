@@ -234,6 +234,70 @@ namespace AzureRag.Services
             }
         }
 
+        /// <summary>
+        /// 画像+テキストを入力としてClaudeに送信（AWS Bedrock Messages）
+        /// </summary>
+        public async Task<string> GenerateVisionAsync(string systemPrompt, string userText, byte[] imageBytes, string imageFormat = "png")
+        {
+            if (imageBytes == null || imageBytes.Length == 0)
+            {
+                _logger.LogWarning("GenerateVisionAsync: 画像が空です");
+                return "";
+            }
+
+            // Bedrock Claudeのマルチモーダルは base64 画像を text+imageのcontentで送信
+            var base64 = Convert.ToBase64String(imageBytes);
+
+            var request = new
+            {
+                anthropic_version = "bedrock-2023-05-31",
+                max_tokens = 1200,
+                system = systemPrompt ?? "You are a helpful assistant.",
+                messages = new object[]
+                {
+                    new {
+                        role = "user",
+                        content = new object[]
+                        {
+                            new { type = "text", text = userText ?? string.Empty },
+                            new {
+                                type = "image",
+                                source = new {
+                                    type = "base64",
+                                    media_type = imageFormat == "jpeg" ? "image/jpeg" : "image/png",
+                                    data = base64
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            var body = JsonSerializer.Serialize(request);
+            var invokeRequest = new InvokeModelRequest
+            {
+                ModelId = _model,
+                Body = new MemoryStream(Encoding.UTF8.GetBytes(body)),
+                ContentType = "application/json"
+            };
+
+            try
+            {
+                _logger.LogInformation("🤖 AWS Bedrock Claude Vision呼び出し: model={Model}, bytes={Bytes}", _model, imageBytes.Length);
+                var response = await _bedrockClient.InvokeModelAsync(invokeRequest);
+                using var responseStream = response.Body;
+                var responseJson = await new StreamReader(responseStream).ReadToEndAsync();
+                var responseObject = JsonSerializer.Deserialize<BedrockClaudeResponse>(responseJson);
+                var answer = responseObject?.Content?[0]?.Text ?? string.Empty;
+                return answer;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "AWS Bedrock Claude Vision呼び出し中にエラー: {Msg}", ex.Message);
+                throw;
+            }
+        }
+
         public void Dispose()
         {
             _bedrockClient?.Dispose();

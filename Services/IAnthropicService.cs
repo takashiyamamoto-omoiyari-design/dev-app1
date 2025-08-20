@@ -20,5 +20,14 @@ namespace AzureRag.Services
         /// <param name="systemPrompt">システムプロンプト（オプション）</param>
         /// <returns>チャット回答</returns>
         Task<string> GenerateChatResponseAsync(string question, string context, string systemPrompt = null);
+
+        /// <summary>
+        /// 画像+テキストを入力としてClaudeに投げ、テキスト応答を取得します（Bedrock経由）
+        /// </summary>
+        /// <param name="systemPrompt">システムプロンプト</param>
+        /// <param name="userText">ユーザーテキスト（画像の説明や比較対象テキストなど）</param>
+        /// <param name="imageBytes">画像（PNG/JPEG推奨）のバイト配列</param>
+        /// <param name="imageFormat">"png" or "jpeg" 等</param>
+        Task<string> GenerateVisionAsync(string systemPrompt, string userText, byte[] imageBytes, string imageFormat = "png");
     }
 }
