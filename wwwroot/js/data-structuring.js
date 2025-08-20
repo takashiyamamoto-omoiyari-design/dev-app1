@@ -2870,7 +2870,20 @@ ${JSON.stringify({
 
     // チャットの表示/非表示を切り替え
     function toggleChat() {
+        // 右パネルを開く/閉じるトグル
+        const willOpen = !rightSidebar.classList.contains('open');
         rightSidebar.classList.toggle('open');
+        if (willOpen) {
+            // チャットUIを表示、差分UIを隠す
+            const chatMessagesEl = document.getElementById('chat-messages');
+            const chatInputContainer = document.querySelector('#rightSidebar .chat-input-container');
+            if (chatMessagesEl) chatMessagesEl.style.display = '';
+            if (chatInputContainer) chatInputContainer.style.display = '';
+            const diffResultsEl = document.getElementById('diff-results');
+            if (diffResultsEl) diffResultsEl.style.display = 'none';
+            const rightPanelTitleEl = document.getElementById('right-panel-title');
+            if (rightPanelTitleEl) rightPanelTitleEl.textContent = 'AIアシスタント';
+        }
     }
 
     // ユーザーメッセージの追加
