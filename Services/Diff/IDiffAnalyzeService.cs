@@ -18,7 +18,7 @@ namespace AzureRag.Services.Diff
 
     public interface IDiffAnalyzeService
     {
-        Task<DiffAnalyzeResult> AnalyzeAsync(string workId, string username);
+        Task<DiffAnalyzeResult> AnalyzeAsync(string workId, string username, int? targetPage0 = null);
     }
 }
 

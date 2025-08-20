@@ -28,7 +28,7 @@ namespace AzureRag.Controllers
             _authorizationService = authorizationService;
         }
 
-        public class DiffAnalyzeRequest { public string work_id { get; set; } }
+        public class DiffAnalyzeRequest { public string work_id { get; set; } public int? page_no { get; set; } }
 
         [HttpPost("diff-analyze")]
         public async Task<IActionResult> DiffAnalyze([FromBody] DiffAnalyzeRequest request)
@@ -51,7 +51,7 @@ namespace AzureRag.Controllers
                 }
 
                 _logger.LogInformation("[DiffAnalyze] 差分処理開始: work_id={WorkId}", request.work_id);
-                var result = await _diffService.AnalyzeAsync(request.work_id, user);
+                var result = await _diffService.AnalyzeAsync(request.work_id, user, request.page_no);
                 _logger.LogInformation("[DiffAnalyze] 差分処理完了: work_id={WorkId}, page_diffs={Count}", request.work_id, result?.PageDiffs?.Count ?? 0);
 
                 return Ok(new

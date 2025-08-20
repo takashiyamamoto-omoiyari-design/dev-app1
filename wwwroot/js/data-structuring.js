@@ -150,18 +150,31 @@ document.addEventListener('DOMContentLoaded', function() {
             const history = loadUploadHistory();
             const latest = history && history.length > 0 ? history[0] : null;
             if (!latest || !latest.workId) return;
+            // 現在ページ番号を推定（0-based）。UI側で保持している場合はそれを参照。
+            let currentPage0 = 0;
+            try {
+                // ページグループのUIから選択中ページを推定
+                const active = document.querySelector('[data-current-page]');
+                if (active) {
+                    const v = parseInt(active.getAttribute('data-current-page'));
+                    if (!Number.isNaN(v)) currentPage0 = Math.max(0, v);
+                }
+            } catch {}
             try {
                 const res = await fetch(getBasePath() + '/api/ocr/diff-analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                     credentials: 'include',
-                    body: JSON.stringify({ work_id: latest.workId })
+                    body: JSON.stringify({ work_id: latest.workId, page_no: currentPage0 })
                 });
                 const contentType = res.headers.get('content-type') || '';
                 if (res.ok) {
                     if (contentType.includes('application/json')) {
                         const data = await res.json();
-                        renderPageDiffsMinimal(data.page_diffs || []);
+                        // 念のためクライアント側でも対象ページだけを描画
+                        const list = Array.isArray(data.page_diffs) ? data.page_diffs : [];
+                        const filtered = list.filter(d => (d.page_no ?? -1) === currentPage0);
+                        renderPageDiffsMinimal(filtered.length > 0 ? filtered : list);
                     } else {
                         pageDiffList.innerHTML = '<div style="padding:12px; color:#b91c1c;">JSON以外の応答を受信しました（ログイン切れの可能性）</div>';
                     }

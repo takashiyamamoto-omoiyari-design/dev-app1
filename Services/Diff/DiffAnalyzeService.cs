@@ -33,7 +33,7 @@ namespace AzureRag.Services.Diff
             _anthropic = anthropic;
         }
 
-        public async Task<DiffAnalyzeResult> AnalyzeAsync(string workId, string username)
+        public async Task<DiffAnalyzeResult> AnalyzeAsync(string workId, string username, int? targetPage0 = null)
         {
             _logger?.LogInformation("[Diff] AnalyzeAsync start: user={User}, work_id={WorkId}", username, workId);
             if (string.IsNullOrWhiteSpace(workId)) throw new ArgumentException("workId is required");
@@ -129,7 +129,20 @@ namespace AzureRag.Services.Diff
             // 画像自動生成に備え、必要依存が無ければ可能な範囲で導入を試みる
             await EnsurePdfImageDependenciesAsync();
 
-            for (int page = 1; page <= pageMax; page++)
+            int startPage = 1;
+            int endPage = pageMax;
+            if (targetPage0.HasValue)
+            {
+                // クライアントは0-basedで渡す。内部は1-basedで処理
+                var tp = targetPage0.Value + 1;
+                if (tp >= 1 && tp <= pageMax)
+                {
+                    startPage = tp;
+                    endPage = tp;
+                }
+            }
+
+            for (int page = startPage; page <= endPage; page++)
             {
                 var orig = Normalize(originalByPage.ContainsKey(page) ? originalByPage[page] : string.Empty);
                 var ext = Normalize(extractedByPage.ContainsKey(page) ? extractedByPage[page] : string.Empty);
