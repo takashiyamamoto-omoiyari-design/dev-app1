@@ -202,6 +202,12 @@ namespace AzureRag.Services.Diff
                         var sys = "あなたはPDFページ画像と抽出テキストの差分を日本語で簡潔に説明するアシスタントです。抽出テキストに欠けている重要箇所、過剰に追加された箇所を列挙してください。";
                         var user = $"これはPDFのp.{page}です。以下は抽出テキストです:\n\n" + ext + "\n\n差分の要点だけを箇条書きで示してください。";
                         visionText = await _anthropic.GenerateVisionAsync(sys, user, bytes, "png");
+                        if (!string.IsNullOrEmpty(visionText))
+                        {
+                            var maxLen = 4000;
+                            var preview = visionText.Length > maxLen ? visionText.Substring(0, maxLen) + " ... [truncated]" : visionText;
+                            _logger?.LogInformation("[Diff] Claude Vision 応答 p={Page}: {Preview}", page, preview);
+                        }
                     }
                 }
                 catch (Exception ex)

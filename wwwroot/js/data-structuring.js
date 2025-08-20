@@ -141,15 +141,26 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 const res = await fetch(getBasePath() + '/api/ocr/diff-analyze', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                     credentials: 'include',
                     body: JSON.stringify({ work_id: latest.workId })
                 });
+                const contentType = res.headers.get('content-type') || '';
                 if (res.ok) {
-                    const data = await res.json();
-                    renderPageDiffsMinimal(data.page_diffs || []);
+                    if (contentType.includes('application/json')) {
+                        const data = await res.json();
+                        renderPageDiffsMinimal(data.page_diffs || []);
+                    } else {
+                        pageDiffList.innerHTML = '<div style="padding:12px; color:#b91c1c;">JSON以外の応答を受信しました（ログイン切れの可能性）</div>';
+                    }
+                } else if (res.status === 401) {
+                    pageDiffList.innerHTML = '<div style="padding:12px; color:#b91c1c;">未認証です。再ログインしてください。</div>';
+                } else if (res.status === 403) {
+                    pageDiffList.innerHTML = '<div style="padding:12px; color:#b91c1c;">アクセス権限がありません。</div>';
                 } else {
+                    const text = contentType.includes('application/json') ? JSON.stringify(await res.json()) : (await res.text()).slice(0, 300);
                     pageDiffList.innerHTML = '<div style="padding:12px; color:#b91c1c;">差分分析取得に失敗しました</div>';
+                    console.error('diff-analyze error response:', res.status, text);
                 }
             } catch (e) {
                 pageDiffList.innerHTML = '<div style="padding:12px; color:#b91c1c;">差分分析呼び出しでエラーが発生しました</div>';
