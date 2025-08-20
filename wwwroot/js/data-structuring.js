@@ -223,6 +223,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const lines = cleaned.split(/\r?\n/).filter(l => l.trim().length > 0);
             const bullets = lines.map(l => `- ${escapeHtml(l)}`).join('\n');
             return `<div style="border-bottom:1px solid #e5e7eb; padding:12px 14px;">
+                <div style="font-weight:600; margin-bottom:6px;">${(d.page_no ?? 0) + 1}枚目</div>
                 <div style="white-space:pre-wrap; line-height:1.6; color:#111827;">${bullets}</div>
             </div>`;
         }).join('');

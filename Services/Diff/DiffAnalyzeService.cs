@@ -73,7 +73,8 @@ namespace AzureRag.Services.Diff
             {
                 originalByPage = await _pdfTextExtraction.ExtractTextByPageAsync(fs);
             }
-            _logger?.LogInformation("[Diff] Original pages extracted: count={Count}", originalByPage?.Count ?? 0);
+            var originalMaxPage = originalByPage.Keys.DefaultIfEmpty(1).Max();
+            _logger?.LogInformation("[Diff] Original pages extracted: count={Count}, max={Max}", originalByPage?.Count ?? 0, originalMaxPage);
 
             // 3) 構造化データ取得（page_text_list優先）
             _logger?.LogInformation("[Diff] Get structured data: work_id={WorkId}", workId);
@@ -81,11 +82,20 @@ namespace AzureRag.Services.Diff
             var extractedByPage = new Dictionary<int, string>(); // key: 1-based
             if (structured?.PageTextList != null && structured.PageTextList.Count > 0)
             {
+                int added = 0, skipped = 0;
                 foreach (var p in structured.PageTextList)
                 {
-                    extractedByPage[p.PageNo + 1] = p.Text ?? string.Empty; // APIは0-based想定なので+1
+                    var page1 = p.PageNo + 1; // APIは0-based想定なので+1
+                    if (page1 < 1 || page1 > originalMaxPage)
+                    {
+                        skipped++;
+                        continue;
+                    }
+                    extractedByPage[page1] = p.Text ?? string.Empty;
+                    added++;
                 }
-                _logger?.LogInformation("[Diff] Using page_text_list: pages={Count}", extractedByPage.Count);
+                var ptMax = structured.PageTextList.Max(x => x.PageNo);
+                _logger?.LogInformation("[Diff] Using page_text_list: total={Total}, added_in_range={Added}, skipped_out_of_range={Skipped}, page_no_max(raw0based)={PtMax}", structured.PageTextList.Count, added, skipped, ptMax);
             }
             else if (structured?.TextList != null && structured.TextList.Count > 0)
             {
@@ -111,7 +121,11 @@ namespace AzureRag.Services.Diff
                 return t.Trim();
             }
 
-            var pageMax = Math.Max(originalByPage.Keys.DefaultIfEmpty(1).Max(), extractedByPage.Keys.DefaultIfEmpty(1).Max());
+            var pageMaxOriginal = originalByPage.Keys.DefaultIfEmpty(1).Max();
+            var pageMaxExtracted = extractedByPage.Keys.DefaultIfEmpty(1).Max();
+            // 表示対象は原本PDFのページ数に限定（抽出側が多くても増やさない）
+            var pageMax = pageMaxOriginal;
+            _logger?.LogInformation("[Diff] Page bounds: original={Original}, extracted={Extracted}, used={Used}", pageMaxOriginal, pageMaxExtracted, pageMax);
             var result = new DiffAnalyzeResult();
 
             // 画像生成出力ルートと一回生成の制御
