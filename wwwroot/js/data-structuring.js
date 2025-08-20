@@ -147,8 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    renderDiffSummary(data.summary || {});
-                    renderPageDiffs(data.page_diffs || []);
+                    renderPageDiffsMinimal(data.page_diffs || []);
                 } else {
                     pageDiffList.innerHTML = '<div style="padding:12px; color:#b91c1c;">差分分析取得に失敗しました</div>';
                 }
@@ -164,59 +163,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function renderDiffSummary(summary) {
-        const el = document.getElementById('diff-summary');
-        if (!el) return;
-        const items = [
-            { k: 'missing', label: '欠落' },
-            { k: 'added', label: '追加' },
-            { k: 'replaced', label: '置換' },
-            { k: 'structure', label: '構造差' }
-        ];
-        el.innerHTML = items.map(i => {
-            const val = (summary && typeof summary[i.k] === 'number') ? summary[i.k] : 0;
-            return `<div style="display:flex; justify-content:space-between; padding:4px 0;">
-                <span>${i.label}</span><span>${val}</span>
-            </div>`;
-        }).join('');
-    }
-
-    function renderPageDiffs(list) {
+    function renderPageDiffsMinimal(list) {
         if (!pageDiffList) return;
-        const severity = diffSeverityFilter ? diffSeverityFilter.value : '';
-        const filtered = !severity ? list : list.filter(x => (x.severity||'').toLowerCase() === severity);
-        if (filtered.length === 0) {
+        if (!Array.isArray(list) || list.length === 0) {
             pageDiffList.innerHTML = '<div style="padding:12px; color:#6b7280;">差分はありません</div>';
             return;
         }
-        pageDiffList.innerHTML = filtered.map(d => {
-            const sevColor = d.severity === 'high' ? '#dc2626' : d.severity === 'medium' ? '#d97706' : '#2563eb';
-            return `<div style="border-bottom:1px solid #e5e7eb; padding:10px 12px;">
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <span style="font-weight:600;">p.${(d.page_no ?? 0)+1}</span>
-                    <span style="font-size:.8rem; padding:2px 6px; background:${sevColor}; color:#fff; border-radius:10px;">${d.severity||'-'}</span>
-                    <span style="font-size:.85rem; color:#374151;">${d.category||'-'}</span>
-                </div>
-                <div style="margin-top:6px; font-size:.9rem;">
-                    <div style="color:#111827;"><strong>抽出:</strong> ${escapeHtml(d.extracted_excerpt||'')}</div>
-                    <div style="color:#6b7280;"><strong>原文:</strong> ${escapeHtml(d.original_excerpt||'')}</div>
-                    ${d.details ? `<div style=\"color:#374151; margin-top:4px;\">${escapeHtml(d.details)}</div>` : ''}
-                </div>
+        // ページ番号順に並べて、ページ見出し + details（またはdiff_text）だけを表示
+        const sorted = [...list].sort((a,b)=> (a.page_no??0) - (b.page_no??0));
+        pageDiffList.innerHTML = sorted.map(d => {
+            const header = `ページ ${(d.page_no ?? 0) + 1}`;
+            const body = escapeHtml(d.diff_text || d.details || '');
+            return `<div style="border-bottom:1px solid #e5e7eb; padding:12px 14px;">
+                <div style="font-weight:600; margin-bottom:6px;">${header}</div>
+                <div style="white-space:pre-wrap; line-height:1.5; color:#111827;">${body}</div>
             </div>`;
         }).join('');
-    }
-
-    if (diffSeverityFilter) {
-        diffSeverityFilter.addEventListener('change', () => {
-            // 再描画（直近の結果を保持していないため簡易対応: 再リクエスト）
-            const history = loadUploadHistory();
-            const latest = history && history.length > 0 ? history[0] : null;
-            if (!latest || !latest.workId) return;
-            fetch(getBasePath() + '/api/ocr/diff-analyze', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-                body: JSON.stringify({ work_id: latest.workId })
-            }).then(r => r.json()).then(d => renderPageDiffs(d.page_diffs||[])).catch(()=>{});
-        });
     }
 
     // 合成データ作成（S3出力）

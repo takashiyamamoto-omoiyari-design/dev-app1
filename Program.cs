@@ -102,6 +102,8 @@ builder.Services.AddSingleton<IPdfTextExtractionService, PdfTextExtractionServic
 builder.Services.AddSingleton<ITokenEstimationService, TokenEstimationService>();
 builder.Services.AddSingleton<ITextChunkingService, TextChunkingService>();
 builder.Services.AddSingleton<IPdfProcessingService, PdfProcessingService>();
+// 差分分析サービス
+builder.Services.AddSingleton<AzureRag.Services.Diff.IDiffAnalyzeService, AzureRag.Services.Diff.DiffAnalyzeService>();
 
 // 新しいマルチインデックス対応サービスを登録 (現在は一時的にコメントアウト)
 // builder.Services.AddSingleton<IMultiIndexSearchService, MultiIndexSearchService>();
