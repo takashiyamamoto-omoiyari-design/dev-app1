@@ -119,6 +119,87 @@ document.addEventListener('DOMContentLoaded', function() {
     const diffSeverityFilter = document.getElementById('diff-severity-filter');
     const optFewshot = document.getElementById('opt-fewshot');
     const fewshotType = document.getElementById('fewshot-type');
+    const diffResults = document.getElementById('diff-results');
+    const rightPanelTitle = document.getElementById('right-panel-title');
+
+    function openRightPanelForDiff() {
+        if (rightSidebar) rightSidebar.classList.add('open');
+        if (rightPanelTitle) rightPanelTitle.textContent = '比較差分';
+        const chatMessagesEl = document.getElementById('chat-messages');
+        if (chatMessagesEl) chatMessagesEl.style.display = 'none';
+        if (diffResults) diffResults.style.display = '';
+    }
+
+    function renderDiffListHtml(list) {
+        if (!Array.isArray(list) || list.length === 0) {
+            return '<div style="padding:12px; color:#6b7280;">差分はありません</div>';
+        }
+        const sorted = [...list].sort((a,b)=> (a.page_no??0) - (b.page_no??0));
+        return sorted.map(d => {
+            const raw = d.diff_text || d.details || '';
+            const cleaned = raw.replace(/^\[p\.(\d+)\]\s*差分\s*\n?/, '');
+            const lines = cleaned.split(/\r?\n/).filter(l => l.trim().length > 0);
+            const bullets = lines.map(l => `- ${escapeHtml(l)}`).join('\n');
+            return `<div style="border-bottom:1px solid #e5e7eb; padding:12px 14px;">
+                <div style="font-weight:600; margin-bottom:6px;">${(d.page_no ?? 0) + 1}枚目</div>
+                <div style="white-space:pre-wrap; line-height:1.6; color:#111827;">${bullets}</div>
+            </div>`;
+        }).join('');
+    }
+
+    // 差分分析（右パネルに表示）: 既存のモーダルは残すが、右パネル表示を優先
+    if (diffAnalyzeBtn) {
+        diffAnalyzeBtn.addEventListener('click', async () => {
+            try {
+                openRightPanelForDiff();
+                if (diffResults) diffResults.innerHTML = '<div style="padding:12px; color:#6b7280;">差分を取得しています...</div>';
+
+                // 直近のworkIdから差分取得（履歴先頭）
+                const history = loadUploadHistory();
+                const latest = history && history.length > 0 ? history[0] : null;
+                if (!latest || !latest.workId) return;
+
+                // 左パネルのページ一覧から実表示ページ数を取得
+                let visiblePageCount = 0;
+                try {
+                    const pageItems = document.querySelectorAll('#page-list .page-item');
+                    visiblePageCount = pageItems ? pageItems.length : 0;
+                } catch {}
+
+                const res = await fetch(getBasePath() + '/api/ocr/diff-analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'include',
+                    body: JSON.stringify({ work_id: latest.workId })
+                });
+                const contentType = res.headers.get('content-type') || '';
+                if (res.ok) {
+                    if (contentType.includes('application/json')) {
+                        const data = await res.json();
+                        const list = Array.isArray(data.page_diffs) ? data.page_diffs : [];
+                        // 実際に左パネルに表示されているページ数で上限をかける
+                        const filtered = (visiblePageCount > 0)
+                            ? list.filter(d => ((d.page_no ?? 0) + 1) <= visiblePageCount)
+                            : list;
+                        if (diffResults) diffResults.innerHTML = renderDiffListHtml(filtered);
+                    } else {
+                        if (diffResults) diffResults.innerHTML = '<div style="padding:12px; color:#b91c1c;">JSON以外の応答を受信しました（ログイン切れの可能性）</div>';
+                    }
+                } else if (res.status === 401) {
+                    if (diffResults) diffResults.innerHTML = '<div style="padding:12px; color:#b91c1c;">未認証です。再ログインしてください。</div>';
+                } else if (res.status === 403) {
+                    if (diffResults) diffResults.innerHTML = '<div style="padding:12px; color:#b91c1c;">アクセス権限がありません。</div>';
+                } else {
+                    const text = contentType.includes('application/json') ? JSON.stringify(await res.json()) : (await res.text()).slice(0, 300);
+                    if (diffResults) diffResults.innerHTML = '<div style="padding:12px; color:#b91c1c;">差分分析取得に失敗しました</div>';
+                    console.error('diff-analyze error response:', res.status, text);
+                }
+            } catch (e) {
+                if (diffResults) diffResults.innerHTML = '<div style="padding:12px; color:#b91c1c;">差分分析呼び出しでエラーが発生しました</div>';
+            }
+        });
+    }
+
     // fewshot UI 表示制御と候補取得
     if (optFewshot && fewshotType) {
         optFewshot.addEventListener('change', async () => {
@@ -608,7 +689,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return extractKeywordsLocally(text);
         }
     }
-
     // APIを呼び出してキーワードを抽出する関数
     async function callKeywordExtractionAPI(text) {
         // 内部APIプロキシエンドポイント（ベースパスを含める）
@@ -1238,7 +1318,6 @@ ${JSON.stringify({
         `;
         return loaderContainer;
     }
-
     // API関連の関数
     async function fetchDocumentList(workId = null) {
         try {
@@ -1877,7 +1956,6 @@ ${JSON.stringify({
     
     // サーバー側認証情報キャッシュ
     let serverAuthCache = null;
-
     // 🔐 ASP.NET統一認証システム
     async function getCurrentUser() {
         // ASP.NET認証情報から取得（統一認証方法）
@@ -2423,7 +2501,6 @@ ${JSON.stringify({
             }
         });
     }
-
     // ドキュメントグループの選択（複数のドキュメントをまとめて表示）
     async function selectDocumentGroup(group) {
         console.log('ドキュメントグループを選択:', group);
@@ -2918,7 +2995,6 @@ ${JSON.stringify({
         chatMessages.appendChild(messageEl);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
-
     // AIメッセージの追加
     function addAIMessage(message, sources = [], keywords = [], emotions = [], synonyms = []) {
         // デバッグログは開発時のみ表示
@@ -3496,7 +3572,6 @@ ${JSON.stringify({
                 document.body.removeChild(fileInput);
             }, 1000);
         });
-        
         // ヘッダーの新しいボタン用イベントリスナー
         // 一括ダウンロードボタン
         batchDownloadBtn.addEventListener('click', function() {
@@ -3947,7 +4022,6 @@ ${JSON.stringify({
 参照ドキュメントに質問に関する情報が全く存在しない場合にのみ「要求された情報は取得した参照ドキュメントにありません。別の質問を試してください。」と回答してください。
 回答の作成方法
 参照ドキュメントから関連する情報を見つけたら:
-
 明確かつ簡潔に情報を要約して回答します
 各文の末尾に引用元を [doc0]、[doc1] のように表記します
 複数の参照ドキュメントを適切に組み合わせて包括的な回答を提供します
@@ -4597,7 +4671,6 @@ ${JSON.stringify({
             }, 300);
         }
     }
-
     // 全ページを取得してキーワード検索
     async function performGlobalSearch(keyword) {
         console.log('全文検索を開始します:', keyword);
@@ -5223,7 +5296,6 @@ ${JSON.stringify({
         console.error('upload-status-list要素が見つかりません');
         return;
     }
-    
     // アップロード履歴を保存する関数
     function saveUploadHistory(workId, fileName) {
         console.log('=== saveUploadHistory呼び出し ===');
@@ -5817,7 +5889,6 @@ ${JSON.stringify({
             second: '2-digit'
         });
     }
-    
     // アップロードされたコンテンツを表示する関数
     async function viewUploadedContent(workId) {
         try {

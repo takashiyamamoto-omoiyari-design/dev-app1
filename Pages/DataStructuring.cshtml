@@ -130,7 +130,7 @@
                     <p id="documentMeta"></p>
                 </div>
                 <div class="toolbar-actions">
-                    <button class="toolbar-btn" id="diff-analyze-btn" style="margin-right: 8px;">差分分析</button>
+                    <button class="toolbar-btn chat-btn" id="diff-analyze-btn" style="margin-right: 8px;">差分分析</button>
                     <button class="toolbar-btn download-btn" id="download-btn">ダウンロード</button>
                     <button class="toolbar-btn chat-btn" id="chatToggleBtn">チャット</button>
                 </div>
@@ -145,11 +145,11 @@
             </div>
         </div>
 
-        <!-- 右サイドバー（チャット） -->
+        <!-- 右サイドバー（チャット / 差分） -->
         <div class="right-sidebar" id="rightSidebar">
             <div class="right-resizer" id="rightResizer"></div>
             <div class="chat-header">
-                <div>AIアシスタント</div>
+                <div id="right-panel-title">AIアシスタント</div>
                 <button class="close-btn" id="close-chat-btn">×</button>
             </div>
             
@@ -162,6 +162,9 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 差分結果表示エリア（初期は非表示、差分モードで使用） -->
+            <div id="diff-results" style="display:none; max-height: calc(100% - 48px); overflow: auto; padding: 12px;"></div>
             
             <div class="chat-input-container">
                 <div class="chat-input-wrapper">

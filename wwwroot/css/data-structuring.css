@@ -153,13 +153,13 @@
   cursor: pointer;
 }
 
-.download-btn {
+.download-btn, .diff-btn-secondary {
   background-color: white;
   color: #374151;
   border: 1px solid #d1d5db;
 }
 
-.chat-btn {
+.chat-btn, .diff-btn-primary {
   background-color: #2563eb;
   color: white;
   border: none;
