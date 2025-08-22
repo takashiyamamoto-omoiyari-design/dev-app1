@@ -169,7 +169,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (diffModal) diffModal.style.display = 'none';
             if (typeof openRightPanelForDiff === 'function') {
                 openRightPanelForDiff();
-                if (diffResults) diffResults.innerHTML = '<div style="padding:12px; color:#6b7280;">分析ボタンを押して差分を取得します...</div>';
+                // 直近の差分が存在しない場合のみガイダンスを表示
+                try {
+                    const hasPrev = Array.isArray(window.lastDiffResult) && window.lastDiffResult.length > 0;
+                    if (!hasPrev && diffResults) {
+                        diffResults.innerHTML = '<div style="padding:12px; color:#6b7280;">分析ボタンを押して差分を取得します...</div>';
+                    }
+                } catch {}
             }
         });
         diffModalClose.addEventListener('click', () => {
@@ -2902,6 +2908,8 @@ ${JSON.stringify({
             if (rightPanelTitleEl) rightPanelTitleEl.textContent = 'AIアシスタント';
             // 合成データ作成ボタンは差分モード限定のため非表示
             if (synthOpenBtn) synthOpenBtn.style.display = 'none';
+            // 分析ボタンもチャットモードでは非表示
+            if (runAnalysisBtn) runAnalysisBtn.style.display = 'none';
         }
     }
 
