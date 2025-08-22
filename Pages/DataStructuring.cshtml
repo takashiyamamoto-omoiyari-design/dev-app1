@@ -90,6 +90,15 @@
         <!-- 左サイドバー -->
         <div class="left-sidebar" id="leftSidebar">
             <div class="left-resizer" id="leftResizer"></div>
+            <!-- アップロードオプション（fewshot） - アップロードボタンの上に配置 -->
+            <div id="upload-options" style="display:flex; align-items:center; gap:8px; padding: 8px 12px;">
+                <label style="display:flex; align-items:center; gap:6px; font-size:.9rem;">
+                    <input type="checkbox" id="opt-fewshot" /> fewshot学習する
+                </label>
+                <select id="fewshot-type" style="display:none; padding:6px; border:1px solid #d1d5db; border-radius:4px;">
+                    <option value="">タイプを選択</option>
+                </select>
+            </div>
             <button class="upload-btn" id="upload-btn">アップロード</button>
             <!-- 現在のファイル表示（PDF名リンク） -->
             <div id="current-file" style="display:none; padding: 8px 12px; border-bottom: 1px solid #e5e7eb;">
@@ -220,16 +229,6 @@
             </div>
         </div>
     </div>
-</div>
-
-<!-- アップロードオプション（fewshot） -->
-<div id="upload-options" style="display:flex; align-items:center; gap:8px; padding: 8px 12px;">
-    <label style="display:flex; align-items:center; gap:6px; font-size:.9rem;">
-        <input type="checkbox" id="opt-fewshot" /> fewshot学習する
-    </label>
-    <select id="fewshot-type" style="display:none; padding:6px; border:1px solid #d1d5db; border-radius:4px;">
-        <option value="">タイプを選択</option>
-    </select>
 </div>
 
 <!-- アップロード状況モーダル -->
