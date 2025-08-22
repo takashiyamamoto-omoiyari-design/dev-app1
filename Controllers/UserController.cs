@@ -45,7 +45,10 @@ namespace AzureRag.Controllers
                 var key = _configuration["UserInfo:Key"] ?? _configuration["DataIngestion:UserInfoKey"] ?? "user-info/userinfo.csv";
 
                 var regionName = Environment.GetEnvironmentVariable("AWS_REGION") ?? "ap-northeast-1";
-                _logger.LogInformation("[UserTypes] START username={Username}, bucket={Bucket}, key={Key}, region={Region}", username, bucket, key, regionName);
+                // 外部APIユーザー（Analyzeで使用するユーザー）が設定されている場合は、それを優先的にタイプ探索に用いる
+                var apiUser = _configuration["DataIngestion:ExternalApiUserId"];
+                var effectiveUser = string.IsNullOrWhiteSpace(apiUser) ? username : apiUser;
+                _logger.LogInformation("[UserTypes] START loginUser={Login}, apiUser={ApiUser}, effectiveUser={Effective}, bucket={Bucket}, key={Key}, region={Region}", username, apiUser ?? "(null)", effectiveUser, bucket, key, regionName);
 
                 if (string.IsNullOrWhiteSpace(bucket))
                 {
@@ -91,7 +94,7 @@ namespace AzureRag.Controllers
                         continue;
                     }
                     var userId = cols[0].Trim();
-                    if (!string.Equals(userId, username, StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(userId, effectiveUser, StringComparison.OrdinalIgnoreCase))
                     {
                         continue;
                     }
