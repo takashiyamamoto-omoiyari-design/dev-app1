@@ -122,6 +122,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const diffResults = document.getElementById('diff-results');
     const rightPanelTitle = document.getElementById('right-panel-title');
     const synthOpenBtn = document.getElementById('open-synth-btn');
+    const runAnalysisBtn = document.getElementById('run-analysis-btn');
     const synthModal = document.getElementById('synth-modal');
     const synthModalHeader = document.getElementById('synth-modal-header');
     const synthCloseBtn = document.getElementById('synth-modal-close');
@@ -141,6 +142,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (chatInputContainer) chatInputContainer.style.display = 'none';
         // 合成データ作成ボタンを表示
         if (synthOpenBtn) synthOpenBtn.style.display = '';
+        // 分析ボタンを表示
+        if (runAnalysisBtn) runAnalysisBtn.style.display = '';
     }
 
     function renderDiffListHtml(list) {
@@ -160,31 +163,41 @@ document.addEventListener('DOMContentLoaded', function() {
         }).join('');
     }
 
-    // 差分分析（右パネルに表示）: 既存のモーダルは残すが、右パネル表示を優先
+    // 差分分析（右パネルに表示）: 既存ボタンは右パネルを開くだけ
     if (diffAnalyzeBtn) {
-        diffAnalyzeBtn.addEventListener('click', async () => {
-            // 変更: モーダルは表示しない
+        diffAnalyzeBtn.addEventListener('click', () => {
             if (diffModal) diffModal.style.display = 'none';
-            // 右パネルでの表示に切替
+            if (typeof openRightPanelForDiff === 'function') {
+                openRightPanelForDiff();
+                if (diffResults) diffResults.innerHTML = '<div style="padding:12px; color:#6b7280;">分析ボタンを押して差分を取得します...</div>';
+            }
+        });
+        diffModalClose.addEventListener('click', () => {
+            diffModal.style.display = 'none';
+        });
+        window.addEventListener('click', (e) => {
+            if (e.target === diffModal) diffModal.style.display = 'none';
+        });
+    }
+
+    // 新設: 右上「分析」ボタンで差分取得を実行
+    if (runAnalysisBtn) {
+        runAnalysisBtn.addEventListener('click', async () => {
             if (typeof openRightPanelForDiff === 'function') {
                 openRightPanelForDiff();
                 if (diffResults) diffResults.innerHTML = '<div style="padding:12px; color:#6b7280;">差分を取得しています...</div>';
             }
-            // 直近のworkIdから差分取得（履歴先頭）
             const history = loadUploadHistory();
             const latest = history && history.length > 0 ? history[0] : null;
             const workId = (typeof currentWorkId === 'string' && currentWorkId) ? currentWorkId : (latest ? latest.workId : null);
             if (!workId) return;
-            // 現在ページ番号を推定（0-based）。UI側で保持している場合はそれを参照。
             let currentPage0 = 0;
             try {
-                // 1) 選択中ドキュメントから取得（selectDocumentGroup/selectDocumentで設定）
                 if (typeof selectedDocument === 'object' && selectedDocument) {
                     if (typeof selectedDocument.pageNumber === 'number') {
                         currentPage0 = Math.max(0, selectedDocument.pageNumber - 1);
                     }
                 }
-                // 2) UIのアクティブ要素から推定（見出しテキストを解析）
                 if (currentPage0 === 0) {
                     const activeEl = document.querySelector('.page-item.active .page-name');
                     if (activeEl && activeEl.textContent) {
@@ -197,7 +210,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch {}
             try {
-                // 左パネルのページ一覧から実表示ページ数を取得
                 let visiblePageCount = 0;
                 try {
                     const pageItems = document.querySelectorAll('#page-list .page-item');
@@ -215,11 +227,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (contentType.includes('application/json')) {
                         const data = await res.json();
                         const list = Array.isArray(data.page_diffs) ? data.page_diffs : [];
-                        // 実際に左パネルに表示されているページ数で上限をかける
                         const filtered = (visiblePageCount > 0)
                             ? list.filter(d => ((d.page_no ?? 0) + 1) <= visiblePageCount)
                             : list;
-                        // 後続の合成データ作成で利用できるよう保持
                         window.lastDiffResult = filtered;
                         if (typeof renderDiffListHtml === 'function' && diffResults) {
                             diffResults.innerHTML = renderDiffListHtml(filtered);
@@ -241,12 +251,6 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (e) {
                 if (diffResults) diffResults.innerHTML = '<div style="padding:12px; color:#b91c1c;">差分分析呼び出しでエラーが発生しました</div>';
             }
-        });
-        diffModalClose.addEventListener('click', () => {
-            diffModal.style.display = 'none';
-        });
-        window.addEventListener('click', (e) => {
-            if (e.target === diffModal) diffModal.style.display = 'none';
         });
     }
 
