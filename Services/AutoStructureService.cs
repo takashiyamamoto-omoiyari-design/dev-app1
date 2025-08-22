@@ -20,7 +20,7 @@ namespace AzureRag.Services
     public interface IAutoStructureService
     {
         Task<AutoStructureResponse> GetStructuredDataAsync(string workId);
-        Task<AnalyzeResponse> AnalyzeFileAsync(IFormFile file, string userId, string password);
+        Task<AnalyzeResponse> AnalyzeFileAsync(IFormFile file, string userId, string password, string type = null);
     }
 
     public class AutoStructureService : IAutoStructureService
@@ -206,7 +206,7 @@ namespace AzureRag.Services
             }
         }
 
-        public async Task<AnalyzeResponse> AnalyzeFileAsync(IFormFile file, string userId, string password)
+        public async Task<AnalyzeResponse> AnalyzeFileAsync(IFormFile file, string userId, string password, string type = null)
         {
             // AWS ALBから健全なエンドポイントを取得
             var healthyEndpoints = await GetHealthyEndpointsFromALBAsync();
@@ -238,6 +238,10 @@ namespace AzureRag.Services
                     // 認証情報を追加 - 外部APIが期待するパラメータ名を正確に使用
                     formContent.Add(new StringContent(userId), "userid");
                     formContent.Add(new StringContent(password), "password");
+                    if (!string.IsNullOrWhiteSpace(type))
+                    {
+                        formContent.Add(new StringContent(type), "type");
+                    }
                     
                     _logger.LogInformation($"外部API呼び出し開始 - ファイル: {file.FileName}, サイズ: {file.Length}バイト");
                     _logger.LogInformation($"送信パラメータ: userid={userId}, password=***");
@@ -351,6 +355,10 @@ namespace AzureRag.Services
                         // 認証情報を追加
                         formContent.Add(new StringContent(userId), "userid");
                         formContent.Add(new StringContent(password), "password");
+                        if (!string.IsNullOrWhiteSpace(type))
+                        {
+                            formContent.Add(new StringContent(type), "type");
+                        }
                         
                         _logger.LogInformation($"再試行APIリクエスト実行開始: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
                         

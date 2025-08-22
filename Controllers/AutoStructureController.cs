@@ -86,7 +86,7 @@ namespace AzureRag.Controllers
                 {
                     // 外部APIを呼び出す
                     _logger.LogInformation("【AutoStructureController】外部APIを呼び出します");
-                    var result = await _autoStructureService.AnalyzeFileAsync(file, userid, password);
+                    var result = await _autoStructureService.AnalyzeFileAsync(file, userid, password, type);
                     
                     _logger.LogInformation($"【AutoStructureController】外部API呼び出し結果: work_id={result.WorkId}, return_code={result.ReturnCode}");
                     

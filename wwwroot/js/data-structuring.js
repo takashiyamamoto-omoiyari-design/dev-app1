@@ -3537,7 +3537,13 @@ ${JSON.stringify({
                         
                         // FormDataを作成
                         const formData = new FormData();
-                        // type パラメータは仕様書に記載がないため削除
+                        // fewshotのtype選択があれば先頭1件を付与
+                        try {
+                            const selected = Array.isArray(window.fewshotSelectedTypes) ? window.fewshotSelectedTypes : [];
+                            if (selected.length > 0) {
+                                formData.append('type', selected[0]);
+                            }
+                        } catch {}
                         
                         // 実際のログインユーザー情報を取得
                         const currentUser = await getCurrentUser();
