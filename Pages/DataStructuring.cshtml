@@ -90,16 +90,21 @@
         <!-- 左サイドバー -->
         <div class="left-sidebar" id="leftSidebar">
             <div class="left-resizer" id="leftResizer"></div>
-            <!-- アップロードオプション（fewshot） - アップロードボタンの上に配置 -->
-            <div id="upload-options" style="display:flex; align-items:center; gap:8px; padding: 8px 12px;">
+            <button class="upload-btn" id="upload-btn">アップロード</button>
+            <!-- アップロードオプション（fewshot） - アップロードボタンの下、PDFリンクの上に配置 -->
+            <div id="upload-options" style="display:flex; flex-direction:column; gap:6px; padding: 8px 12px;">
                 <label style="display:flex; align-items:center; gap:6px; font-size:.9rem;">
                     <input type="checkbox" id="opt-fewshot" /> fewshot学習する
                 </label>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button id="fewshot-open" class="header-button" style="display:none; background-color:#f9fafb; border:1px solid #d1d5db; border-radius:6px; padding: 4px 8px; cursor:pointer; font-size: .85rem;">タイプを選択</button>
+                    <div id="fewshot-summary" style="display:none; font-size:.85rem; color:#374151;"></div>
+                </div>
+                <!-- 既存コード互換用に残す（常時非表示） -->
                 <select id="fewshot-type" style="display:none; padding:6px; border:1px solid #d1d5db; border-radius:4px;">
                     <option value="">タイプを選択</option>
                 </select>
             </div>
-            <button class="upload-btn" id="upload-btn">アップロード</button>
             <!-- 現在のファイル表示（PDF名リンク） -->
             <div id="current-file" style="display:none; padding: 8px 12px; border-bottom: 1px solid #e5e7eb;">
                 <i class="fas fa-file-pdf" style="margin-right: 6px; color:#ef4444;"></i>
@@ -257,6 +262,22 @@
                     <p>データを読み込み中...</p>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- fewshot タイプ選択モーダル -->
+<div id="fewshot-modal" class="modal" style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background-color: rgba(0,0,0,.35); z-index:1100;">
+    <div class="modal-content" style="background:#fff; margin: 6% auto; padding: 14px; width: 520px; max-width: 92vw; border-radius: 8px; position: relative;">
+        <div class="modal-header" style="display:flex; justify-content: space-between; align-items:center; border-bottom:1px solid #e5e7eb; padding-bottom: 8px;">
+            <h3 style="margin:0; font-size:1.1rem;">fewshot タイプを選択</h3>
+            <button id="fewshot-modal-close" aria-label="close" style="background:none; border:none; font-size:1.25rem; cursor:pointer;">×</button>
+        </div>
+        <div class="modal-body" style="padding-top:10px; max-height: 50vh; overflow:auto;">
+            <div id="fewshot-modal-list" style="display:grid; grid-template-columns: 1fr; gap:8px;"></div>
+        </div>
+        <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:8px; padding-top:10px; border-top:1px solid #e5e7eb; margin-top:10px;">
+            <button id="fewshot-modal-save" class="toolbar-btn chat-btn" style="padding: 6px 12px;">保存</button>
         </div>
     </div>
 </div>

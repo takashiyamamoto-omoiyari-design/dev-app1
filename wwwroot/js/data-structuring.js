@@ -119,6 +119,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const diffSeverityFilter = document.getElementById('diff-severity-filter');
     const optFewshot = document.getElementById('opt-fewshot');
     const fewshotType = document.getElementById('fewshot-type');
+    const fewshotOpenBtn = document.getElementById('fewshot-open');
+    const fewshotSummary = document.getElementById('fewshot-summary');
+    const fewshotModal = document.getElementById('fewshot-modal');
+    const fewshotModalClose = document.getElementById('fewshot-modal-close');
+    const fewshotModalList = document.getElementById('fewshot-modal-list');
+    const fewshotModalSave = document.getElementById('fewshot-modal-save');
     const diffResults = document.getElementById('diff-results');
     const rightPanelTitle = document.getElementById('right-panel-title');
     const synthOpenBtn = document.getElementById('open-synth-btn');
@@ -260,28 +266,107 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // fewshot UI 表示制御と候補取得
-    if (optFewshot && fewshotType) {
-        optFewshot.addEventListener('change', async () => {
-            if (optFewshot.checked) {
-                fewshotType.style.display = '';
-                try {
-                    const res = await fetch(getBasePath() + '/api/user/types', { credentials: 'include' });
-                    if (res.ok) {
-                        const data = await res.json();
-                        const types = Array.isArray(data.types) ? data.types : [];
-                        fewshotType.innerHTML = '<option value="">タイプを選択</option>' +
-                            types.map(t => `<option value="${t}">${t}</option>`).join('');
-                    }
-                } catch (e) {
-                    console.error('ユーザータイプ取得に失敗', e);
+    // fewshot UI 表示制御と候補取得（モーダル選択）
+    (function initFewshotUI(){
+        // 選択状態を保持
+        window.fewshotAvailableTypes = window.fewshotAvailableTypes || [];
+        window.fewshotSelectedTypes = window.fewshotSelectedTypes || [];
+
+        function updateFewshotSummary() {
+            try {
+                const selected = window.fewshotSelectedTypes || [];
+                if (!fewshotSummary) return;
+                if (!Array.isArray(selected) || selected.length === 0) {
+                    fewshotSummary.style.display = 'none';
+                    fewshotSummary.textContent = '';
+                    return;
                 }
-            } else {
-                fewshotType.style.display = 'none';
-                fewshotType.value = '';
+                const first = selected[0] || '';
+                const suffix = selected.length > 1 ? ' ・・・' : '';
+                fewshotSummary.textContent = `${selected.length}件: ${first}${suffix}`;
+                fewshotSummary.style.display = '';
+            } catch {}
+        }
+
+        async function ensureAvailableTypes() {
+            if (Array.isArray(window.fewshotAvailableTypes) && window.fewshotAvailableTypes.length > 0) return;
+            try {
+                const res = await fetch(getBasePath() + '/api/user/types', { credentials: 'include' });
+                if (res.ok) {
+                    const data = await res.json();
+                    window.fewshotAvailableTypes = Array.isArray(data.types) ? data.types : [];
+                }
+            } catch (e) { console.error('ユーザータイプ取得に失敗', e); }
+        }
+
+        function openFewshotModal() {
+            if (!fewshotModal || !fewshotModalList) return;
+            fewshotModalList.innerHTML = '';
+            const types = window.fewshotAvailableTypes || [];
+            const selected = new Set(window.fewshotSelectedTypes || []);
+            for (const t of types) {
+                const id = `fst-${Math.random().toString(36).slice(2,8)}`;
+                const item = document.createElement('label');
+                item.style.display = 'flex';
+                item.style.alignItems = 'center';
+                item.style.gap = '8px';
+                item.style.padding = '6px 4px';
+                item.style.border = '1px solid #e5e7eb';
+                item.style.borderRadius = '6px';
+                item.innerHTML = `<input type="checkbox" id="${id}" value="${t}"> <span>${escapeHtml(t)}</span>`;
+                const cb = item.querySelector('input');
+                if (selected.has(t)) cb.checked = true;
+                fewshotModalList.appendChild(item);
             }
-        });
-    }
+            fewshotModal.style.display = '';
+        }
+
+        function closeFewshotModal() { if (fewshotModal) fewshotModal.style.display = 'none'; }
+
+        if (optFewshot) {
+            optFewshot.addEventListener('change', async () => {
+                // 既存selectは常に非表示
+                if (fewshotType) { fewshotType.style.display = 'none'; }
+                if (optFewshot.checked) {
+                    if (fewshotOpenBtn) fewshotOpenBtn.style.display = '';
+                    await ensureAvailableTypes();
+                } else {
+                    if (fewshotOpenBtn) fewshotOpenBtn.style.display = 'none';
+                    if (fewshotSummary) { fewshotSummary.style.display = 'none'; fewshotSummary.textContent = ''; }
+                    window.fewshotSelectedTypes = [];
+                }
+            });
+        }
+
+        if (fewshotOpenBtn) {
+            fewshotOpenBtn.addEventListener('click', async () => {
+                await ensureAvailableTypes();
+                openFewshotModal();
+            });
+        }
+        if (fewshotModalClose) {
+            fewshotModalClose.addEventListener('click', () => closeFewshotModal());
+        }
+        if (fewshotModal) {
+            window.addEventListener('click', (e) => { if (e.target === fewshotModal) closeFewshotModal(); });
+        }
+        if (fewshotModalSave) {
+            fewshotModalSave.addEventListener('click', () => {
+                try {
+                    const checks = fewshotModalList ? Array.from(fewshotModalList.querySelectorAll('input[type="checkbox"]')) : [];
+                    const selected = checks.filter(c => c.checked).map(c => c.value);
+                    window.fewshotSelectedTypes = selected;
+                    updateFewshotSummary();
+                } catch {}
+                closeFewshotModal();
+            });
+        }
+
+        // 初期状態
+        if (fewshotType) fewshotType.style.display = 'none';
+        if (fewshotOpenBtn) fewshotOpenBtn.style.display = 'none';
+        if (fewshotSummary) fewshotSummary.style.display = 'none';
+    })();
 
     // 合成データ作成（S3出力）
     if (makeSyntheticBtn) {
