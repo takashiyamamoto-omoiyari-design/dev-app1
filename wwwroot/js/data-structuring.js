@@ -119,7 +119,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const diffSeverityFilter = document.getElementById('diff-severity-filter');
     const optFewshot = document.getElementById('opt-fewshot');
     const fewshotType = document.getElementById('fewshot-type');
-    const fewshotOpenBtn = document.getElementById('fewshot-open');
     const fewshotSummary = document.getElementById('fewshot-summary');
     const fewshotModal = document.getElementById('fewshot-modal');
     const fewshotModalClose = document.getElementById('fewshot-modal-close');
@@ -289,12 +288,27 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         async function ensureAvailableTypes() {
-            if (Array.isArray(window.fewshotAvailableTypes) && window.fewshotAvailableTypes.length > 0) return;
+            if (Array.isArray(window.fewshotAvailableTypes) && window.fewshotAvailableTypes.length > 0) {
+                console.debug('[fewshot] cached types used:', window.fewshotAvailableTypes);
+                return;
+            }
             try {
-                const res = await fetch(getBasePath() + '/api/user/types', { credentials: 'include' });
-                if (res.ok) {
+                const url = getBasePath() + '/api/user/types';
+                console.debug('[fewshot] fetch', url);
+                const res = await fetch(url, { credentials: 'include' });
+                console.debug('[fewshot] status', res.status, res.statusText);
+                const ct = res.headers.get('content-type') || '';
+                if (!res.ok) {
+                    const txt = ct.includes('application/json') ? JSON.stringify(await res.json()) : await res.text();
+                    console.error('[fewshot] error response', res.status, txt);
+                    return;
+                }
+                if (ct.includes('application/json')) {
                     const data = await res.json();
                     window.fewshotAvailableTypes = Array.isArray(data.types) ? data.types : [];
+                    console.debug('[fewshot] types', window.fewshotAvailableTypes);
+                } else {
+                    console.error('[fewshot] unexpected content-type', ct);
                 }
             } catch (e) { console.error('ユーザータイプ取得に失敗', e); }
         }
@@ -328,20 +342,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 既存selectは常に非表示
                 if (fewshotType) { fewshotType.style.display = 'none'; }
                 if (optFewshot.checked) {
-                    if (fewshotOpenBtn) fewshotOpenBtn.style.display = '';
                     await ensureAvailableTypes();
+                    openFewshotModal();
                 } else {
-                    if (fewshotOpenBtn) fewshotOpenBtn.style.display = 'none';
                     if (fewshotSummary) { fewshotSummary.style.display = 'none'; fewshotSummary.textContent = ''; }
                     window.fewshotSelectedTypes = [];
                 }
-            });
-        }
-
-        if (fewshotOpenBtn) {
-            fewshotOpenBtn.addEventListener('click', async () => {
-                await ensureAvailableTypes();
-                openFewshotModal();
             });
         }
         if (fewshotModalClose) {
@@ -364,7 +370,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 初期状態
         if (fewshotType) fewshotType.style.display = 'none';
-        if (fewshotOpenBtn) fewshotOpenBtn.style.display = 'none';
+        // fewshot-open ボタン廃止
         if (fewshotSummary) fewshotSummary.style.display = 'none';
     })();
 
