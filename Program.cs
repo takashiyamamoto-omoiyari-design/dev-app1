@@ -53,6 +53,8 @@ builder.Configuration.AddJsonFile("appsettings.MultiIndex.json", optional: true,
 builder.Configuration.AddEnvironmentVariables();
 // Users を外部JSONから動的リロード（最終優先）。再起動なしでのユーザー追加・変更を可能にする
 builder.Configuration.AddJsonFile("/etc/demo-app2.users.json", optional: true, reloadOnChange: true);
+// IndexConfiguration も外部JSONから動的リロード（最終優先）。再起動なしでのインデックス定義変更を可能にする
+builder.Configuration.AddJsonFile("/etc/demo-app2.indexes.json", optional: true, reloadOnChange: true);
 
 // ベースパス設定を追加
 var basePath = Environment.GetEnvironmentVariable("APP_BASE_PATH") ?? "";
