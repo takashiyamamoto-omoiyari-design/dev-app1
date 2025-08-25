@@ -33,6 +33,7 @@ namespace AzureRag.Controllers
             public string work_id { get; set; }
             public int samples { get; set; } = 3;
             public DiffItem[] diffs { get; set; } = Array.Empty<DiffItem>();
+            public string prompt { get; set; }
         }
 
         [HttpPost("generate-jsonl")]
@@ -50,7 +51,9 @@ namespace AzureRag.Controllers
 
                 var system = "あなたはRAG向けfew-shot学習用の合成データ（JSONL）を作成するエキスパートです。" +
                              "出力は厳密にJSONL（1行1 JSON）とし、コードフェンスや説明文は含めないでください。";
-                var userPrompt = $@"以下はPDFのページごとの差分説明です。これを必ず参照し、比較差分の内容を踏まえて、同様の文書をRAGインデックス用にテキスト構造化する際に、画像などの認識・構造化精度が向上するfewshot学習用データセットを{n}行のJSONLで作成してください。
+
+                // 既定のユーザープロンプト
+                var defaultUserPrompt = $@"以下はPDFのページごとの差分説明です。これを必ず参照し、比較差分の内容を踏まえて、同様の文書をRAGインデックス用にテキスト構造化する際に、画像などの認識・構造化精度が向上するfewshot学習用データセットを{n}行のJSONLで作成してください。
 - 各行のJSONは次のキーを必ず含めます: task, instruction, input_text, target_structured
 - task は 'pdf_structuring' 固定
 - instruction は日本語で1-2文、対象タスクを明確に
@@ -60,6 +63,13 @@ namespace AzureRag.Controllers
 - JSON以外の文字（コードフェンス/注釈）は出力しないこと
 
 差分まとめ:\n\n{diffsJoined}";
+
+                // リクエストにpromptがあれば優先。{{DIFFS}} や {diffs} をプレースホルダとして置換
+                var userPrompt = string.IsNullOrWhiteSpace(request.prompt)
+                    ? defaultUserPrompt
+                    : (request.prompt
+                        .Replace("{{DIFFS}}", diffsJoined)
+                        .Replace("{diffs}", diffsJoined));
 
                 // Claude 4 Sonnetの最大トークンを優先（10,000希望。許容未満の場合はサービス側の上限に丸め込まれる）
                 var content = await _anthropic.GenerateChatResponseAsync(userPrompt, context: new string(' ', 0), systemPrompt: system);
@@ -80,6 +90,26 @@ namespace AzureRag.Controllers
                 _logger.LogError(ex, "[Synthetic] generate-jsonl 失敗");
                 return StatusCode(500, new { error = "内部エラー" });
             }
+        }
+
+        // 既定プロンプトを返す（UI初期表示用）
+        [HttpGet("default-prompt")]
+        [AllowAnonymous]
+        public IActionResult GetDefaultPrompt([FromQuery]int samples = 3)
+        {
+            var n = Math.Max(1, samples);
+            var system = "あなたはRAG向けfew-shot学習用の合成データ（JSONL）を作成するエキスパートです。出力は厳密にJSONL（1行1 JSON）とし、コードフェンスや説明文は含めないでください。";
+            var user = $@"以下はPDFのページごとの差分説明です。これを必ず参照し、比較差分の内容を踏まえて、同様の文書をRAGインデックス用にテキスト構造化する際に、画像などの認識・構造化精度が向上するfewshot学習用データセットを{n}行のJSONLで作成してください。
+- 各行のJSONは次のキーを必ず含めます: task, instruction, input_text, target_structured
+- task は 'pdf_structuring' 固定
+- instruction は日本語で1-2文、対象タスクを明確に
+- input_text は未知文書の想定断片（日本語）
+- target_structured は所望の構造化出力例（日本語）
+- 差分は参考情報であり、元文書に存在しない事実は生成しないこと
+- JSON以外の文字（コードフェンス/注釈）は出力しないこと
+
+差分まとめ:\n\n{{DIFFS}}";
+            return Ok(new { system_prompt = system, user_prompt = user });
         }
     }
 }

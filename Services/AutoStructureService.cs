@@ -208,6 +208,7 @@ namespace AzureRag.Services
 
         public async Task<AnalyzeResponse> AnalyzeFileAsync(IFormFile file, string userId, string password, string type = null)
         {
+            _logger.LogInformation($"[AnalyzeFileAsync] 受信パラメータ確認: file={file?.FileName}, size={file?.Length ?? 0}B, userId={userId}, type={(string.IsNullOrWhiteSpace(type) ? "(none)" : type)}");
             // AWS ALBから健全なエンドポイントを取得
             var healthyEndpoints = await GetHealthyEndpointsFromALBAsync();
             
@@ -241,10 +242,15 @@ namespace AzureRag.Services
                     if (!string.IsNullOrWhiteSpace(type))
                     {
                         formContent.Add(new StringContent(type), "type");
+                        _logger.LogInformation($"[AnalyzeFileAsync] 送信フォームに type を追加: '{type}'");
+                    }
+                    else
+                    {
+                        _logger.LogInformation("[AnalyzeFileAsync] type は未指定のため送信フォームに含めません");
                     }
                     
                     _logger.LogInformation($"外部API呼び出し開始 - ファイル: {file.FileName}, サイズ: {file.Length}バイト");
-                    _logger.LogInformation($"送信パラメータ: userid={userId}, password=***");
+                    _logger.LogInformation($"送信パラメータ: userid={userId}, password=***, type={(string.IsNullOrWhiteSpace(type) ? "(none)" : type)}");
                     _logger.LogInformation($"APIリクエスト実行開始: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
                     
                     // POSTリクエスト送信
@@ -358,6 +364,11 @@ namespace AzureRag.Services
                         if (!string.IsNullOrWhiteSpace(type))
                         {
                             formContent.Add(new StringContent(type), "type");
+                            _logger.LogInformation($"[AnalyzeFileAsync][再試行] 送信フォームに type を追加: '{type}'");
+                        }
+                        else
+                        {
+                            _logger.LogInformation("[AnalyzeFileAsync][再試行] type は未指定のため送信フォームに含めません");
                         }
                         
                         _logger.LogInformation($"再試行APIリクエスト実行開始: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");

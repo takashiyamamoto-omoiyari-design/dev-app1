@@ -819,6 +819,31 @@ button {
   overflow: visible;
 }
 
+/* ========= モーダル/タブ 追加スタイル ========= */
+.modal-content {
+  box-sizing: border-box;
+}
+.modal-body {
+  overflow: auto;
+}
+.modal-body * {
+  max-width: 100%;
+}
+.modal-body pre,
+.modal-body code,
+.modal-body textarea {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* タブヘッダ/ボタン */
+.tab-header { }
+.tab-btn { color: #374151; }
+.tab-btn.active { border-bottom: 2px solid #2563eb; color: #111827; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
 .user-bubble {
   background-color: #dbeafe;
 }

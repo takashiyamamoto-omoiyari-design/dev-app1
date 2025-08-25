@@ -135,6 +135,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const synthGenBtn = document.getElementById('synth-generate-btn');
     const synthDlBtn = document.getElementById('synth-download-btn');
     const synthJsonl = document.getElementById('synth-jsonl');
+    const synthPrompt = document.getElementById('synth-prompt');
+    const synthPromptSaveBtn = document.getElementById('synth-prompt-save-btn');
+    const tabJsonlBtn = document.getElementById('synth-tab-jsonl');
+    const tabPromptBtn = document.getElementById('synth-tab-prompt');
+    const panelJsonl = document.getElementById('synth-panel-jsonl');
+    const panelPrompt = document.getElementById('synth-panel-prompt');
 
     function openRightPanelForDiff() {
         if (rightSidebar) rightSidebar.classList.add('open');
@@ -3035,6 +3041,23 @@ ${JSON.stringify({
                 const text = Array.isArray(items) ? items.map(d => (d.diff_text||d.details||'')).join('\n\n') : '';
                 if (synthJsonl && !synthJsonl.value) synthJsonl.value = text ? `# diff summary preview (not JSONL)\n${text.substring(0,800)}...` : '';
             } catch {}
+            // 既定プロンプトを未取得なら読み込み
+            try {
+                if (synthPrompt && !synthPrompt.value) {
+                    const n = Math.max(1, Math.min((parseInt(synthSamples?.value)||3), 100));
+                    fetch(getBasePath() + '/api/synthetic/default-prompt?samples=' + encodeURIComponent(n), { credentials: 'include' })
+                        .then(r => r.ok ? r.json() : null)
+                        .then(d => { if (d && d.user_prompt) synthPrompt.value = d.user_prompt; })
+                        .catch(()=>{});
+                }
+            } catch {}
+            // タブ初期状態
+            if (tabJsonlBtn && tabPromptBtn && panelJsonl && panelPrompt) {
+                tabJsonlBtn.classList.add('active');
+                tabPromptBtn.classList.remove('active');
+                panelJsonl.classList.add('active');
+                panelPrompt.classList.remove('active');
+            }
         });
     }
     if (synthCloseBtn && synthModal) {
@@ -3051,9 +3074,11 @@ ${JSON.stringify({
                 if (!workId) return;
                 const samples = Math.max(1, Math.min( (parseInt(synthSamples?.value)||3), 100));
                 const diffs = (window.lastDiffResult||[]).map(d => ({ page_no: d.page_no, diff_text: d.diff_text||d.details||'' }));
+                const body = { work_id: workId, samples, diffs };
+                if (synthPrompt && synthPrompt.value) body.prompt = synthPrompt.value;
                 const res = await fetch(getBasePath() + '/api/synthetic/generate-jsonl', {
                     method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'include',
-                    body: JSON.stringify({ work_id: workId, samples, diffs })
+                    body: JSON.stringify(body)
                 });
                 if (!res.ok) throw new Error('generate-jsonl failed');
                 const data = await res.json();
@@ -3075,6 +3100,43 @@ ${JSON.stringify({
                 document.body.appendChild(a); a.click(); document.body.removeChild(a);
                 URL.revokeObjectURL(url);
             } catch {}
+        });
+    }
+
+    // タブ切替
+    function activateTab(kind) {
+        if (!tabJsonlBtn || !tabPromptBtn || !panelJsonl || !panelPrompt) return;
+        if (kind === 'prompt') {
+            tabPromptBtn.classList.add('active');
+            tabJsonlBtn.classList.remove('active');
+            panelPrompt.classList.add('active');
+            panelJsonl.classList.remove('active');
+        } else {
+            tabJsonlBtn.classList.add('active');
+            tabPromptBtn.classList.remove('active');
+            panelJsonl.classList.add('active');
+            panelPrompt.classList.remove('active');
+        }
+    }
+    if (tabJsonlBtn) tabJsonlBtn.addEventListener('click', ()=>activateTab('jsonl'));
+    if (tabPromptBtn) tabPromptBtn.addEventListener('click', ()=>activateTab('prompt'));
+
+    // プロンプト保存
+    if (synthPromptSaveBtn && synthPrompt) {
+        synthPromptSaveBtn.addEventListener('click', async ()=>{
+            try {
+                const content = synthPrompt.value || '';
+                if (!content.trim()) { showToast('プロンプトが空です', 'warning'); return; }
+                const desc = '合成用プロンプト';
+                const res = await fetch(getBasePath() + '/api/reinforcement/save-prompt', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                    body: JSON.stringify({ content, description: desc })
+                });
+                if (!res.ok) throw new Error('save-prompt failed');
+                showToast('プロンプトを保存しました', 'success');
+            } catch (e) {
+                showToast('プロンプト保存に失敗しました', 'error');
+            }
         });
     }
 
