@@ -3199,8 +3199,10 @@ ${JSON.stringify({
                 const history = loadUploadHistory();
                 const latest = history && history.length > 0 ? history[0] : null;
                 const workId = (typeof currentWorkId === 'string' && currentWorkId) ? currentWorkId : (latest ? latest.workId : null);
+                console.debug('[fewshot] fetching pages for workId', workId);
                 const res = await fetch(getBasePath() + '/api/fewshot/pages?work_id=' + encodeURIComponent(workId), { credentials: 'include' });
                 const data = res.ok ? await res.json() : { pages: [] };
+                console.debug('[fewshot] pages response', data);
                 const pages = Array.isArray(data.pages) ? data.pages : [];
                 pages.forEach(p => {
                     const div = document.createElement('div');

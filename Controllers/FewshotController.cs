@@ -39,10 +39,18 @@ namespace AzureRag.Controllers
 
                 // 既存の保存先（storage/images など）を走査。なければ /var/lib/demo-app2/tmp/pdf_* も併用
                 var candidates = new List<string>();
+                // 相対（現在ディレクトリ直下）
                 candidates.Add(Path.Combine("storage", "images"));
+                candidates.Add(Path.Combine("storage", "tmp"));
+                // 発行ディレクトリ配下
+                candidates.Add(Path.Combine("/opt/app/demo-app2/publish", "storage", "images"));
+                candidates.Add(Path.Combine("/opt/app/demo-app2/publish", "storage", "tmp"));
+                // 外部作業用
                 candidates.Add(Path.Combine("/var/lib/demo-app2/tmp"));
 
                 var items = new List<object>();
+                _logger.LogInformation("[FewshotPages] START work_id={WorkId}", work_id);
+                _logger.LogInformation("[FewshotPages] candidates: {Dirs}", string.Join(", ", candidates.Distinct()));
 
                 foreach (var baseDir in candidates)
                 {
@@ -54,19 +62,55 @@ namespace AzureRag.Controllers
                             .Where(f => f.IndexOf(work_id, StringComparison.OrdinalIgnoreCase) >= 0)
                             .OrderBy(f => f)
                             .ToList();
-                        if (files.Count == 0) continue;
+                        _logger.LogInformation("[FewshotPages] scan {Base} matched={Count}", baseDir, files.Count);
+                        if (files.Count == 0) { continue; }
 
                         for (int i = 0; i < files.Count; i++)
                         {
                             var f = files[i];
-                            // 画像配信用のAPI URLに変換
-                            var url = Url.Content($"~/demo-app2/api/fewshot/image?work_id={Uri.EscapeDataString(work_id)}&path={Uri.EscapeDataString(f)}");
-                            items.Add(new { index = i, url, thumbUrl = url });
+                            // 画像配信用のAPI URLに変換（PathBase対応）
+                            var pb = Request?.PathBase.HasValue == true ? Request.PathBase.Value : string.Empty;
+                            var url = $"{pb}/api/fewshot/image?work_id={Uri.EscapeDataString(work_id)}&path={Uri.EscapeDataString(f)}";
+                            items.Add(new { index = i, url, thumbUrl = url, path = f });
                         }
                     }
                     catch { }
                 }
 
+                // fallback: work_idに一致しない場合は、候補ディレクトリ内のPNGのうち新しい順に上位60件を返す
+                if (items.Count == 0)
+                {
+                    _logger.LogWarning("[FewshotPages] work_id一致の画像が見つかりません。フォールバックで最近の画像を返します");
+                    var allPngs = new List<string>();
+                    foreach (var baseDir in candidates.Distinct())
+                    {
+                        try
+                        {
+                            if (!Directory.Exists(baseDir)) continue;
+                            var fs = Directory.GetFiles(baseDir, "*.png", SearchOption.AllDirectories);
+                            allPngs.AddRange(fs);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogDebug(ex, "[FewshotPages] fallback列挙失敗 base={Base}", baseDir);
+                        }
+                    }
+                    var top = allPngs
+                        .Select(p => new FileInfo(p))
+                        .OrderByDescending(fi => fi.LastWriteTimeUtc)
+                        .Take(60)
+                        .Select((fi, idx) =>
+                        {
+                            var pb = Request?.PathBase.HasValue == true ? Request.PathBase.Value : string.Empty;
+                            var url = $"{pb}/api/fewshot/image?work_id={Uri.EscapeDataString(work_id)}&path={Uri.EscapeDataString(fi.FullName)}";
+                            return new { index = idx, url, thumbUrl = url, path = fi.FullName };
+                        })
+                        .ToList();
+                    _logger.LogInformation("[FewshotPages] fallback returned={Count}", top.Count);
+                    return Ok(new { pages = top });
+                }
+
+                _logger.LogInformation("[FewshotPages] END returned={Count}", items.Count);
                 return Ok(new { pages = items });
             }
             catch (Exception ex)
