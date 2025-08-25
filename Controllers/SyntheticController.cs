@@ -88,7 +88,7 @@ namespace AzureRag.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[Synthetic] generate-jsonl 失敗");
-                return StatusCode(500, new { error = "内部エラー" });
+                return StatusCode(500, new { error = "内部エラー", error_detail = ex.Message });
             }
         }
 

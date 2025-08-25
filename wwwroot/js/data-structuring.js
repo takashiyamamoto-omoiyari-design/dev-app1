@@ -141,6 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const tabPromptBtn = document.getElementById('synth-tab-prompt');
     const panelJsonl = document.getElementById('synth-panel-jsonl');
     const panelPrompt = document.getElementById('synth-panel-prompt');
+    const synthResizer = document.getElementById('synth-resizer');
 
     function openRightPanelForDiff() {
         if (rightSidebar) rightSidebar.classList.add('open');
@@ -3080,7 +3081,11 @@ ${JSON.stringify({
                     method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'include',
                     body: JSON.stringify(body)
                 });
-                if (!res.ok) throw new Error('generate-jsonl failed');
+                if (!res.ok) {
+                    const ct = res.headers.get('content-type')||'';
+                    const txt = ct.includes('application/json') ? JSON.stringify(await res.json()) : await res.text();
+                    throw new Error('generate-jsonl failed: ' + txt.slice(0,300));
+                }
                 const data = await res.json();
                 if (synthJsonl) synthJsonl.value = data.jsonl || '';
             } catch (e) {
@@ -3139,6 +3144,26 @@ ${JSON.stringify({
             }
         });
     }
+
+    // モーダル横リサイズ: モーダルとタブ内textarea幅を連動
+    (function initModalHorizontalResize(){
+        if (!synthModal || !synthResizer) return;
+        let isDrag = false; let startX = 0; let startW = 0;
+        const minW = 480; const maxW = Math.floor(window.innerWidth * 0.95);
+        synthResizer.addEventListener('mousedown', (e)=>{
+            isDrag = true; startX = e.clientX; startW = synthModal.getBoundingClientRect().width; e.preventDefault();
+        });
+        window.addEventListener('mousemove', (e)=>{
+            if (!isDrag) return;
+            const dx = e.clientX - startX; let nextW = Math.min(maxW, Math.max(minW, startW + dx));
+            synthModal.style.width = nextW + 'px';
+        });
+        window.addEventListener('mouseup', ()=>{ isDrag = false; });
+        window.addEventListener('resize', ()=>{
+            const cur = synthModal.getBoundingClientRect().width; const cap = Math.floor(window.innerWidth*0.95);
+            if (cur > cap) synthModal.style.width = cap + 'px';
+        });
+    })();
 
     // ユーザーメッセージの追加
     function addUserMessage(message, keywords = [], synonyms = []) {
