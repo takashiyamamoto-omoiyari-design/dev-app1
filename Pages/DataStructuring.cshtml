@@ -211,6 +211,7 @@
             <div style="display:flex; gap:8px; align-items:center; flex-wrap: wrap;">
                 <button id="synth-generate-btn" class="toolbar-btn chat-btn" style="padding: 6px 10px;">生成</button>
                 <button id="synth-download-btn" class="toolbar-btn download-btn" style="padding: 6px 10px;">ダウンロード</button>
+                <button id="synth-upload-btn" class="toolbar-btn download-btn" style="padding: 6px 10px;">アップロード</button>
                 <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
                     <button id="synth-prompt-save-btn" class="toolbar-btn download-btn" style="padding:6px 10px;">プロンプト保存</button>
                 </div>
@@ -236,6 +237,51 @@
         </div>
     </div>
 
+    <!-- Fewshotアップロード用モーダル（3ステップ） -->
+    <div id="fewshot-upload-modal" class="modal" style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,.35); z-index:1300;">
+        <div class="modal-content" style="background:#fff; margin: 6% auto; padding: 14px; width: 720px; max-width: 95vw; border-radius: 8px; position: relative;">
+            <div class="modal-header" style="display:flex; justify-content: space-between; align-items:center; border-bottom:1px solid #e5e7eb; padding-bottom: 8px;">
+                <h3 style="margin:0; font-size:1.1rem;">Fewshot アップロード</h3>
+                <button id="fewshot-upload-close" aria-label="close" style="background:none; border:none; font-size:1.25rem; cursor:pointer;">×</button>
+            </div>
+            <div class="modal-body" style="padding-top:10px; max-height: 70vh; overflow:auto;">
+                <!-- Step 1: タイプ選択 -->
+                <div id="fu-step1">
+                    <div style="margin-bottom:8px; color:#374151;">fewshot タイプを選択</div>
+                    <div id="fu-type-list" style="display:grid; grid-template-columns: 1fr; gap:8px;"></div>
+                    <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+                        <button id="fu-next1" class="toolbar-btn chat-btn" style="padding: 6px 12px;">次へ</button>
+                    </div>
+                </div>
+                <!-- Step 2: サムネ選択 -->
+                <div id="fu-step2" style="display:none;">
+                    <div style="margin-bottom:8px; color:#374151;">ページ画像を1つ選択</div>
+                    <div id="fu-thumb-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:10px;"></div>
+                    <div style="display:flex; justify-content:space-between; margin-top:10px;">
+                        <button id="fu-back2" class="toolbar-btn download-btn" style="padding: 6px 12px;">戻る</button>
+                        <button id="fu-next2" class="toolbar-btn chat-btn" style="padding: 6px 12px;">次へ</button>
+                    </div>
+                </div>
+                <!-- Step 3: 確認とアップロード -->
+                <div id="fu-step3" style="display:none;">
+                    <div style="display:flex; gap:12px;">
+                        <div style="flex:1;">
+                            <div style="font-weight:600; margin-bottom:6px;">選択画像</div>
+                            <img id="fu-preview" src="#" alt="preview" style="max-width:100%; border:1px solid #e5e7eb; border-radius:6px;" />
+                        </div>
+                        <div style="flex:1;">
+                            <div style="font-weight:600; margin-bottom:6px;">合成データ</div>
+                            <textarea id="fu-text" readonly style="width:100%; height: 280px; border:1px solid #e5e7eb; border-radius:6px; padding:8px; resize: vertical; max-height:70vh; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;"></textarea>
+                        </div>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-top:10px;">
+                        <button id="fu-back3" class="toolbar-btn download-btn" style="padding: 6px 12px;">戻る</button>
+                        <button id="fu-upload" class="toolbar-btn chat-btn" style="padding: 6px 12px;">アップロード</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 <!-- 差分分析モーダル -->
 <div id="diff-modal" class="modal" style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background-color: rgba(0,0,0,.5); z-index:1000;">
     <div class="modal-content" style="background:#fff; margin: 3% auto; padding: 16px; width: 92%; max-width: 1400px; border-radius: 8px; position: relative;">

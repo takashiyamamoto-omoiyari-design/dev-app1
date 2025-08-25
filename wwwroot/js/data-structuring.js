@@ -134,6 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const synthSamples = document.getElementById('synth-samples');
     const synthGenBtn = document.getElementById('synth-generate-btn');
     const synthDlBtn = document.getElementById('synth-download-btn');
+    const synthUploadBtn = document.getElementById('synth-upload-btn');
     const synthJsonl = document.getElementById('synth-jsonl');
     const synthPrompt = document.getElementById('synth-prompt');
     const synthPromptSaveBtn = document.getElementById('synth-prompt-save-btn');
@@ -142,6 +143,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const panelJsonl = document.getElementById('synth-panel-jsonl');
     const panelPrompt = document.getElementById('synth-panel-prompt');
     const synthResizer = document.getElementById('synth-resizer');
+
+    // Fewshot upload modal elements
+    const fuModal = document.getElementById('fewshot-upload-modal');
+    const fuClose = document.getElementById('fewshot-upload-close');
+    const fuStep1 = document.getElementById('fu-step1');
+    const fuStep2 = document.getElementById('fu-step2');
+    const fuStep3 = document.getElementById('fu-step3');
+    const fuTypeList = document.getElementById('fu-type-list');
+    const fuNext1 = document.getElementById('fu-next1');
+    const fuBack2 = document.getElementById('fu-back2');
+    const fuNext2 = document.getElementById('fu-next2');
+    const fuBack3 = document.getElementById('fu-back3');
+    const fuUpload = document.getElementById('fu-upload');
+    const fuThumbGrid = document.getElementById('fu-thumb-grid');
+    const fuPreview = document.getElementById('fu-preview');
+    const fuText = document.getElementById('fu-text');
+    let fuSelectedType = '';
+    let fuSelectedImage = { url: '', path: '' };
 
     function openRightPanelForDiff() {
         if (rightSidebar) rightSidebar.classList.add('open');
@@ -3132,6 +3151,103 @@ ${JSON.stringify({
                 document.body.appendChild(a); a.click(); document.body.removeChild(a);
                 URL.revokeObjectURL(url);
             } catch {}
+        });
+    }
+
+    // Fewshot Upload: open modal
+    if (synthUploadBtn && fuModal) {
+        synthUploadBtn.addEventListener('click', async ()=>{
+            fuSelectedType = '';
+            fuSelectedImage = { url: '', path: '' };
+            fuText.value = synthJsonl ? (synthJsonl.value||'') : '';
+            fuPreview.src = '#';
+            // step1 初期化
+            fuStep1.style.display = '';
+            fuStep2.style.display = 'none';
+            fuStep3.style.display = 'none';
+            fuTypeList.innerHTML = '';
+            fuThumbGrid.innerHTML = '';
+            fuModal.style.display = '';
+            try {
+                // GET user types
+                const res = await fetch(getBasePath() + '/api/user/types', { credentials: 'include' });
+                const data = res.ok ? await res.json() : { types: [] };
+                const types = Array.isArray(data.types) ? data.types : [];
+                types.forEach(t => {
+                    const id = 'fu-type-' + Math.random().toString(36).slice(2,8);
+                    const label = document.createElement('label');
+                    label.style.display = 'flex'; label.style.alignItems = 'center'; label.style.gap = '8px'; label.style.padding = '6px 4px';
+                    label.style.border = '1px solid #e5e7eb'; label.style.borderRadius = '6px';
+                    label.innerHTML = `<input type="radio" name="fu-type" id="${id}" value="${t}"><span>${escapeHtml(t)}</span>`;
+                    fuTypeList.appendChild(label);
+                });
+            } catch {}
+        });
+    }
+    if (fuClose && fuModal) {
+        fuClose.addEventListener('click', ()=>{ fuModal.style.display = 'none'; });
+        window.addEventListener('click', (e)=>{ if (e.target === fuModal) fuModal.style.display = 'none'; });
+    }
+    if (fuNext1) {
+        fuNext1.addEventListener('click', async ()=>{
+            try {
+                const checked = fuTypeList ? fuTypeList.querySelector('input[name="fu-type"]:checked') : null;
+                if (!checked) { showToast('タイプを選択してください', 'warning'); return; }
+                fuSelectedType = checked.value;
+                // サムネ取得
+                fuThumbGrid.innerHTML = '';
+                const history = loadUploadHistory();
+                const latest = history && history.length > 0 ? history[0] : null;
+                const workId = (typeof currentWorkId === 'string' && currentWorkId) ? currentWorkId : (latest ? latest.workId : null);
+                const res = await fetch(getBasePath() + '/api/fewshot/pages?work_id=' + encodeURIComponent(workId), { credentials: 'include' });
+                const data = res.ok ? await res.json() : { pages: [] };
+                const pages = Array.isArray(data.pages) ? data.pages : [];
+                pages.forEach(p => {
+                    const div = document.createElement('div');
+                    div.style.border = '1px solid #e5e7eb'; div.style.borderRadius = '6px'; div.style.padding = '4px'; div.style.cursor = 'pointer';
+                    div.innerHTML = `<img src="${p.thumbUrl}" style="width:100%; height:100px; object-fit:cover; border-radius:4px;"/>`;
+                    div.addEventListener('click', ()=>{
+                        Array.from(fuThumbGrid.children).forEach(ch => ch.style.outline='none');
+                        div.style.outline = '2px solid #2563eb';
+                        fuSelectedImage = { url: p.url, path: p.path || '' };
+                    });
+                    fuThumbGrid.appendChild(div);
+                });
+                fuStep1.style.display = 'none';
+                fuStep2.style.display = '';
+            } catch {}
+        });
+    }
+    if (fuBack2) fuBack2.addEventListener('click', ()=>{ fuStep2.style.display='none'; fuStep1.style.display=''; });
+    if (fuNext2) {
+        fuNext2.addEventListener('click', ()=>{
+            if (!fuSelectedImage || !fuSelectedImage.url) { showToast('画像を1つ選択してください', 'warning'); return; }
+            fuPreview.src = fuSelectedImage.url;
+            fuText.value = synthJsonl ? (synthJsonl.value||'') : '';
+            fuStep2.style.display = 'none';
+            fuStep3.style.display = '';
+        });
+    }
+    if (fuBack3) fuBack3.addEventListener('click', ()=>{ fuStep3.style.display='none'; fuStep2.style.display=''; });
+    if (fuUpload) {
+        fuUpload.addEventListener('click', async ()=>{
+            try {
+                if (!fuSelectedType) { showToast('タイプが未選択です', 'warning'); return; }
+                if (!fuSelectedImage || !fuSelectedImage.url) { showToast('画像が未選択です', 'warning'); return; }
+                const history = loadUploadHistory();
+                const latest = history && history.length > 0 ? history[0] : null;
+                const workId = (typeof currentWorkId === 'string' && currentWorkId) ? currentWorkId : (latest ? latest.workId : null);
+                const body = { work_id: workId, type: fuSelectedType, image_url: fuSelectedImage.url, image_path: fuSelectedImage.path||'', text: fuText.value, groupPrefix: 'AU' };
+                const res = await fetch(getBasePath() + '/api/fewshot/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(body) });
+                const ct = res.headers.get('content-type')||'';
+                const ok = res.ok;
+                const payload = ct.includes('application/json') ? await res.json() : { };
+                if (!ok) throw new Error((payload.detail||payload.error||'upload failed').toString());
+                showToast('アップロードしました: ' + (payload.baseName||''), 'success');
+                fuModal.style.display = 'none';
+            } catch(e) {
+                showToast('アップロードに失敗: ' + (e.message||e), 'error');
+            }
         });
     }
 
