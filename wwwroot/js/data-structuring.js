@@ -3042,14 +3042,41 @@ ${JSON.stringify({
                 const text = Array.isArray(items) ? items.map(d => (d.diff_text||d.details||'')).join('\n\n') : '';
                 if (synthJsonl && !synthJsonl.value) synthJsonl.value = text ? `# diff summary preview (not JSONL)\n${text.substring(0,800)}...` : '';
             } catch {}
-            // 既定プロンプトを未取得なら読み込み
+            // 最新保存プロンプト→既定プロンプトの順で未取得時に読み込み
             try {
                 if (synthPrompt && !synthPrompt.value) {
-                    const n = Math.max(1, Math.min((parseInt(synthSamples?.value)||3), 100));
-                    fetch(getBasePath() + '/api/synthetic/default-prompt?samples=' + encodeURIComponent(n), { credentials: 'include' })
+                    // 1) 一覧から最新のプロンプト取得
+                    fetch(getBasePath() + '/api/reinforcement/list-prompts', { credentials: 'include' })
                         .then(r => r.ok ? r.json() : null)
-                        .then(d => { if (d && d.user_prompt) synthPrompt.value = d.user_prompt; })
-                        .catch(()=>{});
+                        .then(async d => {
+                            try {
+                                const files = d && d.files ? d.files : (d && d.Files ? d.Files : []);
+                                if (Array.isArray(files) && files.length > 0) {
+                                    const fn = files[0].FileName || files[0].fileName || files[0].filename;
+                                    if (fn) {
+                                        const resp = await fetch(getBasePath() + '/api/reinforcement/prompt/get/' + encodeURIComponent(fn), { credentials: 'include' });
+                                        if (resp.ok) {
+                                            const obj = await resp.json();
+                                            if (obj && obj.content && !synthPrompt.value) synthPrompt.value = obj.content;
+                                            return;
+                                        }
+                                    }
+                                }
+                            } catch {}
+                            // 2) フォールバック: 既定プロンプト
+                            try {
+                                const r2 = await fetch(getBasePath() + '/api/synthetic/default-prompt', { credentials: 'include' });
+                                const d2 = r2.ok ? await r2.json() : null;
+                                if (d2 && d2.user_prompt && !synthPrompt.value) synthPrompt.value = d2.user_prompt;
+                            } catch {}
+                        })
+                        .catch(async ()=>{
+                            try {
+                                const r2 = await fetch(getBasePath() + '/api/synthetic/default-prompt', { credentials: 'include' });
+                                const d2 = r2.ok ? await r2.json() : null;
+                                if (d2 && d2.user_prompt && !synthPrompt.value) synthPrompt.value = d2.user_prompt;
+                            } catch {}
+                        });
                 }
             } catch {}
             // タブ初期状態
@@ -3073,7 +3100,7 @@ ${JSON.stringify({
                 const latest = history && history.length > 0 ? history[0] : null;
                 const workId = (typeof currentWorkId === 'string' && currentWorkId) ? currentWorkId : (latest ? latest.workId : null);
                 if (!workId) return;
-                const samples = Math.max(1, Math.min( (parseInt(synthSamples?.value)||3), 100));
+                const samples = 3; // 件数UIを廃止したため固定
                 const diffs = (window.lastDiffResult||[]).map(d => ({ page_no: d.page_no, diff_text: d.diff_text||d.details||'' }));
                 const body = { work_id: workId, samples, diffs };
                 if (synthPrompt && synthPrompt.value) body.prompt = synthPrompt.value;
@@ -6587,7 +6614,7 @@ ${JSON.stringify({
                     };
                 });
             }
-
+            
             // 従来の形式の処理
             console.log('従来形式のデータ処理');
             

@@ -97,9 +97,9 @@ namespace AzureRag.Controllers
         [AllowAnonymous]
         public IActionResult GetDefaultPrompt([FromQuery]int samples = 3)
         {
-            var n = Math.Max(1, samples);
+            var n = 3; // 固定: 指定のデフォルト要件に合わせて3行
             var system = "あなたはRAG向けfew-shot学習用の合成データ（JSONL）を作成するエキスパートです。出力は厳密にJSONL（1行1 JSON）とし、コードフェンスや説明文は含めないでください。";
-            var user = $@"以下はPDFのページごとの差分説明です。これを必ず参照し、比較差分の内容を踏まえて、同様の文書をRAGインデックス用にテキスト構造化する際に、画像などの認識・構造化精度が向上するfewshot学習用データセットを{n}行のJSONLで作成してください。
+            var user = $@"以下はPDFのページごとの差分説明です。これを必ず参照し、比較差分の内容を踏まえて、同様の文書をRAGインデックス用にテキスト構造化する際に、画像などの認識・構造化精度が向上するfewshot学習用データセットを3行のJSONLで作成してください。
 - 各行のJSONは次のキーを必ず含めます: task, instruction, input_text, target_structured
 - task は 'pdf_structuring' 固定
 - instruction は日本語で1-2文、対象タスクを明確に
