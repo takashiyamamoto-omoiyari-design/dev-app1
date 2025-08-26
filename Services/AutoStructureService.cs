@@ -449,6 +449,8 @@ namespace AzureRag.Services
                 {
                     _logger.LogInformation($"APIエンドポイントを試行: {endpoint}");
                     _logger.LogInformation($"【デバッグ】エンドポイント試行開始 - baseEndpoint: {baseEndpoint}, workId: {workId}");
+                    // ここで3秒待機してからチェック（外部APIの直後で未反映を吸収）
+                    try { await Task.Delay(3000); } catch {}
                     
                     // JSONリクエストを生成
                     var request = new HttpRequestMessage(HttpMethod.Post, endpoint);

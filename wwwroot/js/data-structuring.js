@@ -3098,12 +3098,9 @@ ${JSON.stringify({
                         });
                 }
             } catch {}
-            // タブ初期状態
+            // タブ初期状態（ハイライト付与）
             if (tabJsonlBtn && tabPromptBtn && panelJsonl && panelPrompt) {
-                tabJsonlBtn.classList.add('active');
-                tabPromptBtn.classList.remove('active');
-                panelJsonl.classList.add('active');
-                panelPrompt.classList.remove('active');
+                setSynthTabActive('jsonl');
             }
         });
     }
@@ -3153,6 +3150,26 @@ ${JSON.stringify({
             } catch {}
         });
     }
+
+    function setSynthTabActive(which) {
+        if (!tabJsonlBtn || !tabPromptBtn || !panelJsonl || !panelPrompt) return;
+        const activate = (btnOn, btnOff, panelOn, panelOff) => {
+            btnOn.classList.add('active');
+            btnOff.classList.remove('active');
+            panelOn.classList.add('active');
+            panelOff.classList.remove('active');
+            // 視覚的ハイライト（ボタン背景・文字色）
+            btnOn.style.background = '#2563eb';
+            btnOn.style.color = '#fff';
+            btnOff.style.background = '#f3f4f6';
+            btnOff.style.color = '#374151';
+        };
+        if (which === 'jsonl') activate(tabJsonlBtn, tabPromptBtn, panelJsonl, panelPrompt);
+        else activate(tabPromptBtn, tabJsonlBtn, panelPrompt, panelJsonl);
+    }
+
+    if (tabJsonlBtn) tabJsonlBtn.addEventListener('click', ()=> setSynthTabActive('jsonl'));
+    if (tabPromptBtn) tabPromptBtn.addEventListener('click', ()=> setSynthTabActive('prompt'));
 
     // Fewshot Upload: open modal
     if (synthUploadBtn && fuModal) {
