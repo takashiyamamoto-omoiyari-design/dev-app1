@@ -3118,7 +3118,14 @@ ${JSON.stringify({
                 if (!workId) return;
                 const samples = 3; // 件数UIを廃止したため固定
                 const diffs = (window.lastDiffResult||[]).map(d => ({ page_no: d.page_no, diff_text: d.diff_text||d.details||'' }));
-                const body = { work_id: workId, samples, diffs };
+                // 構造化済みテキストと画像情報を収集
+                const structuredText = (selectedDocument && selectedDocument.content) ? selectedDocument.content : '';
+                let visiblePageCount = 0; try { visiblePageCount = document.querySelectorAll('#page-list .page-item').length || 0; } catch {}
+                const fileLabel = (typeof currentFileLink !== 'undefined' && currentFileLink && currentFileLink.textContent) ? currentFileLink.textContent.trim() : (selectedDocument && selectedDocument.name ? selectedDocument.name : '');
+                const imageInfo = [];
+                if (fileLabel) imageInfo.push(`file:${fileLabel}`);
+                if (visiblePageCount > 0) imageInfo.push(`pages:${visiblePageCount}`);
+                const body = { work_id: workId, samples, diffs, structured_text: structuredText, image_info: imageInfo };
                 if (synthPrompt && synthPrompt.value) body.prompt = synthPrompt.value;
                 const res = await fetch(getBasePath() + '/api/synthetic/generate-jsonl', {
                     method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'include',

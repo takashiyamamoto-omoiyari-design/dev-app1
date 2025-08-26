@@ -34,6 +34,8 @@ namespace AzureRag.Controllers
             public int samples { get; set; } = 3;
             public DiffItem[] diffs { get; set; } = Array.Empty<DiffItem>();
             public string prompt { get; set; }
+            public string structured_text { get; set; }
+            public string[] image_info { get; set; } = Array.Empty<string>();
         }
 
         [HttpPost("generate-jsonl")]
@@ -65,11 +67,27 @@ namespace AzureRag.Controllers
 差分まとめ:\n\n{diffsJoined}";
 
                 // リクエストにpromptがあれば優先。{{DIFFS}} や {diffs} をプレースホルダとして置換
+                // 画像情報/構造化テキストの差し込み
+                var imgInfo = (request.image_info != null && request.image_info.Length > 0) ? string.Join("\n", request.image_info) : "(情報なし)";
+                var stText = string.IsNullOrWhiteSpace(request.structured_text) ? "(なし)" : request.structured_text;
+
+                var promptBase = $@"{defaultUserPrompt}
+
+[元文書画像情報]
+{imgInfo}
+
+[表示中の構造化済みテキスト（全文または抜粋）]
+{stText}";
+
                 var userPrompt = string.IsNullOrWhiteSpace(request.prompt)
-                    ? defaultUserPrompt
+                    ? promptBase
                     : (request.prompt
                         .Replace("{{DIFFS}}", diffsJoined)
-                        .Replace("{diffs}", diffsJoined));
+                        .Replace("{diffs}", diffsJoined)
+                        .Replace("{{STRUCTURED_TEXT}}", stText)
+                        .Replace("{structured_text}", stText)
+                        .Replace("{{IMAGE_INFO}}", imgInfo)
+                        .Replace("{image_info}", imgInfo));
 
                 // Claude 4 Sonnetの最大トークンを優先（10,000希望。許容未満の場合はサービス側の上限に丸め込まれる）
                 var content = await _anthropic.GenerateChatResponseAsync(userPrompt, context: new string(' ', 0), systemPrompt: system);
