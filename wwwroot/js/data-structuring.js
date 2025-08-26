@@ -208,6 +208,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 } catch {}
             }
+            // プロンプトプレビューを追記/更新
+            try { updatePromptPreviewInTextarea(); } catch {}
         });
         diffModalClose.addEventListener('click', () => {
             diffModal.style.display = 'none';
@@ -3138,6 +3140,7 @@ ${JSON.stringify({
                 }
                 const data = await res.json();
                 if (synthJsonl) synthJsonl.value = data.jsonl || '';
+                try { updatePromptPreviewInTextarea(); } catch {}
             } catch (e) {
                 if (synthJsonl) synthJsonl.value = `# エラー: ${e.message}`;
             }
@@ -3177,6 +3180,25 @@ ${JSON.stringify({
 
     if (tabJsonlBtn) tabJsonlBtn.addEventListener('click', ()=> setSynthTabActive('jsonl'));
     if (tabPromptBtn) tabPromptBtn.addEventListener('click', ()=> setSynthTabActive('prompt'));
+
+    function updatePromptPreviewInTextarea() {
+        if (!synthPrompt) return;
+        const marker = '\n\n# 生成に使用する要素（プレビュー）\n';
+        const items = window.lastDiffResult || [];
+        const diffs = Array.isArray(items) ? items.map(d => `- [p.${(d.page_no??0)+1}]`).join('\n') : '';
+        const structuredText = (selectedDocument && selectedDocument.content) ? selectedDocument.content : '';
+        let visiblePageCount = 0; try { visiblePageCount = document.querySelectorAll('#page-list .page-item').length || 0; } catch {}
+        const fileLabel = (typeof currentFileLink !== 'undefined' && currentFileLink && currentFileLink.textContent) ? currentFileLink.textContent.trim() : (selectedDocument && selectedDocument.name ? selectedDocument.name : '');
+        const imageInfo = [];
+        if (fileLabel) imageInfo.push(`file:${fileLabel}`);
+        if (visiblePageCount > 0) imageInfo.push(`pages:${visiblePageCount}`);
+        const stPreview = structuredText ? structuredText.substring(0, 1200) + (structuredText.length > 1200 ? ' ...' : '') : '';
+        const preview = `${marker}[IMAGE_INFO]\n${imageInfo.join('\n') || '(なし)'}\n\n[DIFFS]\n${diffs || '(なし)'}\n\n[STRUCTURED_TEXT]\n${stPreview || '(なし)'}\n`;
+        const base = synthPrompt.value || '';
+        const idx = base.indexOf(marker);
+        if (idx >= 0) synthPrompt.value = base.substring(0, idx) + preview;
+        else synthPrompt.value = base + preview;
+    }
 
     // Fewshot Upload: open modal
     if (synthUploadBtn && fuModal) {
