@@ -146,7 +146,7 @@ namespace AzureRag.Controllers
             public string image_url { get; set; } // 内部APIの画像URL
             public string image_path { get; set; } // サーバ側の実ファイルパス（優先）
             public string text { get; set; } // 合成データ本文
-            public string groupPrefix { get; set; } // 先頭2文字等（任意、なければ "AU" など既定）
+            public string groupPrefix { get; set; } // 先頭2文字: [A-Z][A-Z]（任意、未指定は "AU"）
         }
 
         // アップロード: 画像とテキストをS3へ保存
@@ -177,16 +177,20 @@ namespace AzureRag.Controllers
                 var regionName = Environment.GetEnvironmentVariable("AWS_REGION") ?? "ap-northeast-1";
                 if (string.IsNullOrWhiteSpace(bucket)) return StatusCode(500, new { error = "S3バケット未設定" });
 
-                // 命名規則の生成: [A-Z][A-Z]C0-XXX
+                // 命名規則の生成: [A-Z][A-Z]C0-XXX（Claude3.7固定 → C0）。
+                // groupPrefixが不正な場合は自動補正し、必ず2文字の英大文字にする。
                 var grp = (req.groupPrefix ?? "AU");
                 grp = Regex.Replace(grp.ToUpperInvariant(), "[^A-Z]", "");
                 if (grp.Length < 2) grp = (grp + "AU").Substring(0, 2);
+                else if (grp.Length > 2) grp = grp.Substring(0, 2);
 
                 var prefix = $"analyze-structure/individual/{user}/{req.type}/";
 
-                // 既存の採番を取得
+                // 既存の採番を取得して次番号を算出。さらにHEAD相当のメタデータ取得で衝突回避。
                 var region = Amazon.RegionEndpoint.GetBySystemName(regionName);
                 using var s3 = new AmazonS3Client(region);
+
+                // まずは既存一覧から最大番号を推定
                 var listReq = new ListObjectsV2Request { BucketName = bucket, Prefix = prefix };
                 var existing = new List<string>();
                 ListObjectsV2Response listRes;
@@ -204,11 +208,31 @@ namespace AzureRag.Controllers
                     var m = re.Match(key);
                     if (m.Success && int.TryParse(m.Groups[1].Value, out var n) && n > maxNo) maxNo = n;
                 }
-                var next = maxNo + 1;
-                var serial = next.ToString("D3");
-                var baseName = $"{grp}C0-{serial}";
 
-                // アップロード
+                // 推定値+1から開始し、存在チェックで未使用の連番を確定
+                int candidate = Math.Max(0, maxNo) + 1;
+                string baseName;
+                while (true)
+                {
+                    var serial = candidate.ToString("D3");
+                    baseName = $"{grp}C0-{serial}";
+                    var tryImgKey = prefix + baseName + ".png";
+                    try
+                    {
+                        var metaReq = new GetObjectMetadataRequest { BucketName = bucket, Key = tryImgKey };
+                        var _ = await s3.GetObjectMetadataAsync(metaReq);
+                        // 存在する → 次の番号
+                        candidate++;
+                        continue;
+                    }
+                    catch (AmazonS3Exception metaEx) when (metaEx.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    {
+                        // 存在しない → 採用
+                    }
+                    break;
+                }
+
+                // 確定キー
                 var imgKey = prefix + baseName + ".png";
                 var txtKey = prefix + baseName + ".txt";
 
