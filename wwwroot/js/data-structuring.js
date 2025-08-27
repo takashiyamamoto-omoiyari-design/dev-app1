@@ -143,6 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const panelJsonl = document.getElementById('synth-panel-jsonl');
     const panelPrompt = document.getElementById('synth-panel-prompt');
     const synthResizer = document.getElementById('synth-resizer');
+    const autoLoadLatestPrompt = false; // 初期値は空白にするため自動読み込みOFF
 
     // Fewshot upload modal elements
     const fuModal = document.getElementById('fewshot-upload-modal');
@@ -3064,8 +3065,10 @@ ${JSON.stringify({
                 if (synthJsonl && !synthJsonl.value) synthJsonl.value = text ? `# diff summary preview (not JSONL)\n${text.substring(0,800)}...` : '';
             } catch {}
             // 最新保存プロンプト→既定プロンプトの順で未取得時に読み込み
+            // 初期値は空白
+            if (synthPrompt) synthPrompt.value = '';
             try {
-                if (synthPrompt && !synthPrompt.value) {
+                if (autoLoadLatestPrompt && synthPrompt && !synthPrompt.value) {
                     // 1) 一覧から最新のプロンプト取得
                     // サーバー側で最新の1ファイルを返すエンドポイントに切替
                     fetch(getBasePath() + '/api/reinforcement/prompt/latest', { credentials: 'include' })
@@ -3077,24 +3080,10 @@ ${JSON.stringify({
                                 return;
                             }
                             // 2) フォールバック: 既定プロンプト
-                            try {
-                                const r2 = await fetch(getBasePath() + '/api/synthetic/default-prompt', { credentials: 'include' });
-                                const d2 = r2.ok ? await r2.json() : null;
-                                if (d2 && d2.user_prompt) {
-                                    const cleaned = stripPromptPreviewPrefix(d2.user_prompt);
-                                    synthPrompt.value = cleaned;
-                                }
-                            } catch {}
+                            // 自動読み込みOFFのためフォールバックもしない
                         })
                         .catch(async ()=>{
-                            try {
-                                const r2 = await fetch(getBasePath() + '/api/synthetic/default-prompt', { credentials: 'include' });
-                                const d2 = r2.ok ? await r2.json() : null;
-                                if (d2 && d2.user_prompt) {
-                                    const cleaned = stripPromptPreviewPrefix(d2.user_prompt);
-                                    synthPrompt.value = cleaned;
-                                }
-                            } catch {}
+                            // noop
                         });
                 }
             } catch {}
