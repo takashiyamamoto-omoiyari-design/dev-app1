@@ -3078,8 +3078,9 @@ ${JSON.stringify({
                                         const resp = await fetch(getBasePath() + '/api/reinforcement/prompt/get/' + encodeURIComponent(fn), { credentials: 'include' });
                                         if (resp.ok) {
                                             const obj = await resp.json();
-                                            if (obj && obj.content && !synthPrompt.value) {
-                                                synthPrompt.value = obj.content;
+                                            if (obj && obj.content) {
+                                                const cleaned = stripPromptPreviewPrefix(obj.content);
+                                                synthPrompt.value = cleaned;
                                             }
                                             return;
                                         }
@@ -3090,8 +3091,9 @@ ${JSON.stringify({
                             try {
                                 const r2 = await fetch(getBasePath() + '/api/synthetic/default-prompt', { credentials: 'include' });
                                 const d2 = r2.ok ? await r2.json() : null;
-                                if (d2 && d2.user_prompt && !synthPrompt.value) {
-                                    synthPrompt.value = d2.user_prompt;
+                                if (d2 && d2.user_prompt) {
+                                    const cleaned = stripPromptPreviewPrefix(d2.user_prompt);
+                                    synthPrompt.value = cleaned;
                                 }
                             } catch {}
                         })
@@ -3099,8 +3101,9 @@ ${JSON.stringify({
                             try {
                                 const r2 = await fetch(getBasePath() + '/api/synthetic/default-prompt', { credentials: 'include' });
                                 const d2 = r2.ok ? await r2.json() : null;
-                                if (d2 && d2.user_prompt && !synthPrompt.value) {
-                                    synthPrompt.value = d2.user_prompt;
+                                if (d2 && d2.user_prompt) {
+                                    const cleaned = stripPromptPreviewPrefix(d2.user_prompt);
+                                    synthPrompt.value = cleaned;
                                 }
                             } catch {}
                         });
@@ -3185,6 +3188,23 @@ ${JSON.stringify({
 
     if (tabJsonlBtn) tabJsonlBtn.addEventListener('click', ()=> setSynthTabActive('jsonl'));
     if (tabPromptBtn) tabPromptBtn.addEventListener('click', ()=> setSynthTabActive('prompt'));
+
+    // 旧プレフィクスやプレビューブロックを除去するクリーナー
+    function stripPromptPreviewPrefix(text) {
+        try {
+            if (!text) return '';
+            let t = String(text);
+            // 旧プレフィクス箇条書き - [PREFIX]/[UPDATED]/[NOTE]
+            t = t.replace(/^- \[PREFIX\][\s\S]*?\n/mi, '');
+            t = t.replace(/^- \[UPDATED\][\s\S]*?\n/mi, '');
+            t = t.replace(/^- \[NOTE\][\s\S]*?\n/mi, '');
+            // 生成に使用する要素（プレビュー）ブロックを含めて以降を削除
+            const marker = '\n\n# 生成に使用する要素（プレビュー）';
+            const idx = t.indexOf(marker);
+            if (idx >= 0) t = t.substring(0, idx);
+            return t.trimStart();
+        } catch { return text; }
+    }
 
     function buildPromptPrefix(meta, fileName) {
         try {
