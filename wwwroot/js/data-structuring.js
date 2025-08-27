@@ -3187,10 +3187,31 @@ ${JSON.stringify({
             t = t.replace(/^- \[PREFIX\][\s\S]*?\n/mi, '');
             t = t.replace(/^- \[UPDATED\][\s\S]*?\n/mi, '');
             t = t.replace(/^- \[NOTE\][\s\S]*?\n/mi, '');
-            // 生成に使用する要素（プレビュー）ブロックを含めて以降を削除
-            const marker = '\n\n# 生成に使用する要素（プレビュー）';
-            const idx = t.indexOf(marker);
-            if (idx >= 0) t = t.substring(0, idx);
+            // 生成に使用する要素（プレビュー）ブロックを削除（ブロック後の本文は残す）
+            const mk = '# 生成に使用する要素（プレビュー）';
+            let start = t.indexOf(mk);
+            if (start >= 0) {
+                // ブロック終端を推定: マーカー以降で、最初に「タグ/コードブロック以外で始まる行」位置
+                const after = t.substring(start);
+                const lines = after.split(/\n/);
+                // 行0はマーカー行。以降を走査
+                let cutEndOffset = after.length; // デフォルト末尾まで
+                let accLen = 0;
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i];
+                    const trimmed = line.trimStart();
+                    const isTag = trimmed.startsWith('[') || trimmed.startsWith('#') || trimmed.startsWith('```') || trimmed === '';
+                    if (!isTag) {
+                        // この行の先頭位置を終端とする
+                        cutEndOffset = accLen; // accLenは直前までの合計。今の行の直前で切る
+                        break;
+                    }
+                    accLen += line.length + 1; // +1 for newline
+                }
+                const before = t.substring(0, start).trim();
+                const afterBlock = after.substring(cutEndOffset);
+                t = (before ? before + '\n\n' : '') + afterBlock;
+            }
             return t.trimStart();
         } catch { return text; }
     }
