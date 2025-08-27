@@ -205,6 +205,42 @@ namespace AzureRag.Controllers
                 return StatusCode(500, new { success = false, error = ex.Message });
             }
         }
+
+        /// <summary>
+        /// 最新のプロンプト本文を返す（.meta.jsonが無くても*.txtの更新日時で判定）
+        /// </summary>
+        [HttpGet("latest")]
+        public IActionResult GetLatestPrompt()
+        {
+            try
+            {
+                var promptsDir = Path.Combine(_rlStorageDirectory, "prompts");
+                if (!Directory.Exists(promptsDir))
+                {
+                    return NotFound(new { success = false, error = "prompts ディレクトリが存在しません" });
+                }
+
+                var txtFiles = Directory.GetFiles(promptsDir, "*.txt");
+                if (txtFiles.Length == 0)
+                {
+                    return NotFound(new { success = false, error = "プロンプトファイルが見つかりません" });
+                }
+
+                // 更新日時の降順で最新を選択
+                var latest = txtFiles
+                    .Select(p => new { Path = p, Time = System.IO.File.GetLastWriteTime(p) })
+                    .OrderByDescending(x => x.Time)
+                    .First();
+
+                var content = System.IO.File.ReadAllText(latest.Path);
+                return Ok(new { success = true, file = Path.GetFileName(latest.Path), content });
+            }
+            catch (System.Exception ex)
+            {
+                _logger?.LogError(ex, "最新プロンプト取得に失敗");
+                return StatusCode(500, new { success = false, error = ex.Message });
+            }
+        }
         
         [HttpGet("get/{id}")]
         public IActionResult GetPrompt(string id)

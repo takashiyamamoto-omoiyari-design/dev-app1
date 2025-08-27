@@ -3067,26 +3067,15 @@ ${JSON.stringify({
             try {
                 if (synthPrompt && !synthPrompt.value) {
                     // 1) 一覧から最新のプロンプト取得
-                    fetch(getBasePath() + '/api/reinforcement/list-prompts', { credentials: 'include' })
+                    // サーバー側で最新の1ファイルを返すエンドポイントに切替
+                    fetch(getBasePath() + '/api/reinforcement/prompt/latest', { credentials: 'include' })
                         .then(r => r.ok ? r.json() : null)
-                        .then(async d => {
-                            try {
-                                const files = d && d.files ? d.files : (d && d.Files ? d.Files : []);
-                                if (Array.isArray(files) && files.length > 0) {
-                                    const fn = files[0].FileName || files[0].fileName || files[0].filename;
-                                    if (fn) {
-                                        const resp = await fetch(getBasePath() + '/api/reinforcement/prompt/get/' + encodeURIComponent(fn), { credentials: 'include' });
-                                        if (resp.ok) {
-                                            const obj = await resp.json();
-                                            if (obj && obj.content) {
-                                                const cleaned = stripPromptPreviewPrefix(obj.content);
-                                                synthPrompt.value = cleaned;
-                                            }
-                                            return;
-                                        }
-                                    }
-                                }
-                            } catch {}
+                        .then(async obj => {
+                            if (obj && obj.success && obj.content) {
+                                const cleaned = stripPromptPreviewPrefix(obj.content);
+                                synthPrompt.value = cleaned;
+                                return;
+                            }
                             // 2) フォールバック: 既定プロンプト
                             try {
                                 const r2 = await fetch(getBasePath() + '/api/synthetic/default-prompt', { credentials: 'include' });
