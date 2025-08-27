@@ -217,12 +217,14 @@ namespace AzureRag.Controllers
                 var promptsDir = Path.Combine(_rlStorageDirectory, "prompts");
                 if (!Directory.Exists(promptsDir))
                 {
+                    _logger?.LogWarning("[PromptLatest] prompts ディレクトリが存在しません: {Dir}", promptsDir);
                     return NotFound(new { success = false, error = "prompts ディレクトリが存在しません" });
                 }
 
                 var txtFiles = Directory.GetFiles(promptsDir, "*.txt");
                 if (txtFiles.Length == 0)
                 {
+                    _logger?.LogWarning("[PromptLatest] *.txt が見つかりません: {Dir}", promptsDir);
                     return NotFound(new { success = false, error = "プロンプトファイルが見つかりません" });
                 }
 
@@ -232,6 +234,7 @@ namespace AzureRag.Controllers
                     .OrderByDescending(x => x.Time)
                     .First();
 
+                _logger?.LogInformation("[PromptLatest] 候補数={Count}, 選択={File}, 更新={Time:O}", txtFiles.Length, Path.GetFileName(latest.Path), latest.Time);
                 var content = System.IO.File.ReadAllText(latest.Path);
                 return Ok(new { success = true, file = Path.GetFileName(latest.Path), content });
             }
