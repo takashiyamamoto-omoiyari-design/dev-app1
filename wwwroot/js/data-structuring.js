@@ -3079,10 +3079,7 @@ ${JSON.stringify({
                                         if (resp.ok) {
                                             const obj = await resp.json();
                                             if (obj && obj.content && !synthPrompt.value) {
-                                                const meta = obj.metadata || null;
-                                                const prefix = buildPromptPrefix(meta, fn);
-                                                synthPrompt.value = prefix + obj.content;
-                                                try { updatePromptPreviewInTextarea(); } catch {}
+                                                synthPrompt.value = obj.content;
                                             }
                                             return;
                                         }
@@ -3094,9 +3091,7 @@ ${JSON.stringify({
                                 const r2 = await fetch(getBasePath() + '/api/synthetic/default-prompt', { credentials: 'include' });
                                 const d2 = r2.ok ? await r2.json() : null;
                                 if (d2 && d2.user_prompt && !synthPrompt.value) {
-                                    const prefix = buildPromptPrefix({ Description: 'Default Prompt' }, 'default.txt');
-                                    synthPrompt.value = prefix + d2.user_prompt;
-                                    try { updatePromptPreviewInTextarea(); } catch {}
+                                    synthPrompt.value = d2.user_prompt;
                                 }
                             } catch {}
                         })
@@ -3105,9 +3100,7 @@ ${JSON.stringify({
                                 const r2 = await fetch(getBasePath() + '/api/synthetic/default-prompt', { credentials: 'include' });
                                 const d2 = r2.ok ? await r2.json() : null;
                                 if (d2 && d2.user_prompt && !synthPrompt.value) {
-                                    const prefix = buildPromptPrefix({ Description: 'Default Prompt' }, 'default.txt');
-                                    synthPrompt.value = prefix + d2.user_prompt;
-                                    try { updatePromptPreviewInTextarea(); } catch {}
+                                    synthPrompt.value = d2.user_prompt;
                                 }
                             } catch {}
                         });
@@ -3117,7 +3110,6 @@ ${JSON.stringify({
             if (tabJsonlBtn && tabPromptBtn && panelJsonl && panelPrompt) {
                 setSynthTabActive('jsonl');
             }
-            try { updatePromptPreviewInTextarea(); } catch {}
         });
     }
     if (synthCloseBtn && synthModal) {
@@ -3154,7 +3146,6 @@ ${JSON.stringify({
                 }
                 const data = await res.json();
                 if (synthJsonl) synthJsonl.value = data.jsonl || '';
-                try { updatePromptPreviewInTextarea(); } catch {}
             } catch (e) {
                 if (synthJsonl) synthJsonl.value = `# エラー: ${e.message}`;
             }
