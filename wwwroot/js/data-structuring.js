@@ -3078,7 +3078,12 @@ ${JSON.stringify({
                                         const resp = await fetch(getBasePath() + '/api/reinforcement/prompt/get/' + encodeURIComponent(fn), { credentials: 'include' });
                                         if (resp.ok) {
                                             const obj = await resp.json();
-                                            if (obj && obj.content && !synthPrompt.value) synthPrompt.value = obj.content;
+                                            if (obj && obj.content && !synthPrompt.value) {
+                                                const meta = obj.metadata || null;
+                                                const prefix = buildPromptPrefix(meta, fn);
+                                                synthPrompt.value = prefix + obj.content;
+                                                try { updatePromptPreviewInTextarea(); } catch {}
+                                            }
                                             return;
                                         }
                                     }
@@ -3088,14 +3093,22 @@ ${JSON.stringify({
                             try {
                                 const r2 = await fetch(getBasePath() + '/api/synthetic/default-prompt', { credentials: 'include' });
                                 const d2 = r2.ok ? await r2.json() : null;
-                                if (d2 && d2.user_prompt && !synthPrompt.value) synthPrompt.value = d2.user_prompt;
+                                if (d2 && d2.user_prompt && !synthPrompt.value) {
+                                    const prefix = buildPromptPrefix({ Description: 'Default Prompt' }, 'default.txt');
+                                    synthPrompt.value = prefix + d2.user_prompt;
+                                    try { updatePromptPreviewInTextarea(); } catch {}
+                                }
                             } catch {}
                         })
                         .catch(async ()=>{
                             try {
                                 const r2 = await fetch(getBasePath() + '/api/synthetic/default-prompt', { credentials: 'include' });
                                 const d2 = r2.ok ? await r2.json() : null;
-                                if (d2 && d2.user_prompt && !synthPrompt.value) synthPrompt.value = d2.user_prompt;
+                                if (d2 && d2.user_prompt && !synthPrompt.value) {
+                                    const prefix = buildPromptPrefix({ Description: 'Default Prompt' }, 'default.txt');
+                                    synthPrompt.value = prefix + d2.user_prompt;
+                                    try { updatePromptPreviewInTextarea(); } catch {}
+                                }
                             } catch {}
                         });
                 }
@@ -3104,6 +3117,7 @@ ${JSON.stringify({
             if (tabJsonlBtn && tabPromptBtn && panelJsonl && panelPrompt) {
                 setSynthTabActive('jsonl');
             }
+            try { updatePromptPreviewInTextarea(); } catch {}
         });
     }
     if (synthCloseBtn && synthModal) {
@@ -3180,6 +3194,22 @@ ${JSON.stringify({
 
     if (tabJsonlBtn) tabJsonlBtn.addEventListener('click', ()=> setSynthTabActive('jsonl'));
     if (tabPromptBtn) tabPromptBtn.addEventListener('click', ()=> setSynthTabActive('prompt'));
+
+    function buildPromptPrefix(meta, fileName) {
+        try {
+            const ts = new Date();
+            const y = ts.getFullYear();
+            const m = String(ts.getMonth()+1).padStart(2,'0');
+            const d = String(ts.getDate()).padStart(2,'0');
+            const hh = String(ts.getHours()).padStart(2,'0');
+            const mm = String(ts.getMinutes()).padStart(2,'0');
+            const ss = String(ts.getSeconds()).padStart(2,'0');
+            const updated = `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
+            const desc = (meta && (meta.Description || meta.description)) ? (meta.Description || meta.description) : '';
+            const title = desc ? desc : (fileName || 'latest');
+            return `- [PREFIX] ${title}\n- [UPDATED] ${updated}\n- [NOTE] 以下に現在のプロンプト本文が続きます\n\n`;
+        } catch { return ''; }
+    }
 
     function updatePromptPreviewInTextarea() {
         if (!synthPrompt) return;
