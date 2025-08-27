@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const panelJsonl = document.getElementById('synth-panel-jsonl');
     const panelPrompt = document.getElementById('synth-panel-prompt');
     const synthResizer = document.getElementById('synth-resizer');
-    const autoLoadLatestPrompt = false; // 初期値は空白にするため自動読み込みOFF
+    const autoLoadLatestPrompt = true; // 最新の保存プロンプトを初期表示（そのまま素通し）
 
     // Fewshot upload modal elements
     const fuModal = document.getElementById('fewshot-upload-modal');
