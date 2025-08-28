@@ -3838,6 +3838,51 @@ namespace AzureRag.Controllers
                 return StatusCode(500, new { error = "検索クエリテストに失敗しました", details = ex.Message });
             }
         }
+
+        /// <summary>
+        /// 指定workIdのインデックスデータをメイン/センテンス両方から削除（管理系）
+        /// </summary>
+        [HttpDelete("indexes/{workId}")]
+        public async Task<IActionResult> DeleteWorkIdIndexes(string workId)
+        {
+            try
+            {
+                // 認証チェック
+                if (!User?.Identity?.IsAuthenticated ?? true)
+                {
+                    return Unauthorized(new { error = "認証が必要です" });
+                }
+
+                var currentUsername = User.Identity.Name;
+                var currentRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "User";
+
+                // 権限: Admin は全削除可、一般は自分の workId のみ
+                var allowedWorkIds = await _authorizationService.GetAllowedWorkIdsAsync(currentUsername);
+                if (currentRole != "Admin" && !allowedWorkIds.Contains(workId))
+                {
+                    return Forbidden(new { error = "指定されたworkIdへの削除権限がありません", workId });
+                }
+
+                // ユーザー固有のインデックス切替
+                _azureSearchService.SetUserSpecificIndexes(currentUsername);
+
+                // 削除実行
+                var (deletedMain, deletedSentence) = await _azureSearchService.DeleteWorkIdAsync(workId, currentUsername);
+
+                return Ok(new {
+                    success = true,
+                    workId = workId,
+                    deleted_main = deletedMain,
+                    deleted_sentence = deletedSentence,
+                    timestamp = DateTime.UtcNow
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "workId削除中にエラーが発生: {WorkId}", workId);
+                return StatusCode(500, new { error = "インデックス削除に失敗しました", details = ex.Message });
+            }
+        }
     }
 
     public class DataStructuringChatRequest

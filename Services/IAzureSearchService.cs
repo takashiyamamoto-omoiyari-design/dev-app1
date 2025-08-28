@@ -143,5 +143,13 @@ namespace AzureRag.Services
         /// </summary>
         /// <param name="username">ユーザー名</param>
         void SetUserSpecificIndexes(string username);
+
+        /// <summary>
+        /// 指定workIdの全ドキュメントを、メイン/センテンス両インデックスから削除
+        /// </summary>
+        /// <param name="workId">削除対象のworkId</param>
+        /// <param name="username">ユーザー名（ユーザー固有インデックス切替に使用、任意）</param>
+        /// <returns>削除件数（メイン, センテンス）</returns>
+        Task<(int deletedMain, int deletedSentence)> DeleteWorkIdAsync(string workId, string username = null);
     }
 }

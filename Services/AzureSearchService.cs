@@ -1420,6 +1420,108 @@ namespace AzureRag.Services
         }
 
         /// <summary>
+        /// 指定workIdの全ドキュメントをメイン/センテンス両インデックスから削除
+        /// </summary>
+        public async Task<(int deletedMain, int deletedSentence)> DeleteWorkIdAsync(string workId, string username = null)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(username))
+                {
+                    // ユーザー固有のインデックスへ切替
+                    SetUserSpecificIndexes(username);
+                }
+
+                // 内部関数: あるインデックスから workId を削除
+                async Task<int> DeleteFromIndexAsync(string indexName)
+                {
+                    int totalDeleted = 0;
+                    string searchUrl = $"{_searchEndpoint}/indexes/{indexName}/docs/search?api-version={_apiVersion}";
+                    _httpClient.DefaultRequestHeaders.Clear();
+                    _httpClient.DefaultRequestHeaders.Add("api-key", _searchKey);
+
+                    while (true)
+                    {
+                        // ページングでIDを回収
+                        var searchRequest = new
+                        {
+                            search = "*",
+                            filter = $"workId eq '{workId}'",
+                            top = 1000,
+                            select = "id"
+                        };
+
+                        var json = JsonSerializer.Serialize(searchRequest, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+                        var content = new StringContent(json, Encoding.UTF8, "application/json");
+                        var response = await _httpClient.PostAsync(searchUrl, content);
+
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            var err = await response.Content.ReadAsStringAsync();
+                            _logger.LogError("DeleteWorkIdAsync 検索失敗: Index={Index} Status={Status} Error={Error}", indexName, response.StatusCode, err);
+                            break;
+                        }
+
+                        var text = await response.Content.ReadAsStringAsync();
+                        using var doc = JsonDocument.Parse(text);
+                        var ids = new List<string>();
+                        if (doc.RootElement.TryGetProperty("value", out var arr) && arr.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var item in arr.EnumerateArray())
+                            {
+                                if (item.TryGetProperty("id", out var idProp))
+                                {
+                                    var id = idProp.GetString();
+                                    if (!string.IsNullOrEmpty(id)) ids.Add(id);
+                                }
+                            }
+                        }
+
+                        if (ids.Count == 0)
+                        {
+                            // これ以上なし
+                            break;
+                        }
+
+                        // バッチ削除（1,000件まで）
+                        var batch = IndexDocumentsBatch.Delete("id", ids);
+                        try
+                        {
+                            var delResult = await _searchClient.IndexDocumentsAsync(batch);
+                            int success = delResult.Results.Count(r => r.Succeeded);
+                            totalDeleted += success;
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "DeleteWorkIdAsync バッチ削除エラー: Index={Index}", indexName);
+                        }
+
+                        // レート制限回避のため短いインターバル
+                        await Task.Delay(200);
+                    }
+
+                    _logger.LogInformation("DeleteWorkIdAsync 完了: Index={Index}, Deleted={Deleted}", indexName, totalDeleted);
+                    return totalDeleted;
+                }
+
+                // メイン
+                _searchClient = new SearchClient(new Uri(_searchEndpoint), _mainIndexName, new AzureKeyCredential(_searchKey));
+                var deletedMain = await DeleteFromIndexAsync(_mainIndexName);
+                // センテンス
+                var sentenceClient = new SearchClient(new Uri(_searchEndpoint), _sentenceIndexName, new AzureKeyCredential(_searchKey));
+                _searchClient = sentenceClient; // 再利用
+                var deletedSentence = await DeleteFromIndexAsync(_sentenceIndexName);
+
+                return (deletedMain, deletedSentence);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "DeleteWorkIdAsync 処理中エラー: workId={WorkId}", workId);
+                return (0, 0);
+            }
+        }
+
+        /// <summary>
         /// 検索リクエスト実行
         /// </summary>
         private async Task<List<SearchResult>> ExecuteSearchRequest(object searchRequest, bool useVectorIndex = false)

@@ -5909,7 +5909,7 @@ ${JSON.stringify({
                     <div>${formatDate(new Date(item.uploadDate))}</div>
                     <div class="action-cell">
                         ${renderActionButton(item)}
-                </div>
+                    </div>
             </div>
             `;
         }).join('');
@@ -5986,7 +5986,11 @@ ${JSON.stringify({
                 }
             case 1:
                 // 解析完了（完了）
-                return `<button class="view-upload-btn btn btn-primary" data-work-id="${uploadItem.workId}" style="background-color: #3389ca; color: white; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 0.875rem;">表示</button>`;
+                return `
+                <div style="display:flex; gap:8px;">
+                    <button class="view-upload-btn btn btn-primary" data-work-id="${uploadItem.workId}" style="background-color: #3389ca; color: white; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 0.875rem;">表示</button>
+                    <button class="delete-workid-btn btn btn-outline" data-work-id="${uploadItem.workId}" style="background-color: #ffffff; color: #dc2626; border: 1px solid #dc2626; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 0.875rem;">削除</button>
+                </div>`;
             case 2:
                 // エラー発生（エラー）
                 return `<button class="btn btn-danger" disabled style="background-color: #dc3545; color: white; border: none; border-radius: 4px; padding: 6px 12px; font-size: 0.875rem; cursor: not-allowed;">エラー</button>`;
@@ -5995,6 +5999,53 @@ ${JSON.stringify({
                 return `<button class="btn btn-secondary" disabled style="background-color: #6c757d; color: white; border: none; border-radius: 4px; padding: 6px 12px; font-size: 0.875rem; cursor: not-allowed;">準備中...</button>`;
         }
     }
+
+    // 一括で削除ボタンのイベントをバインド（モーダル描画後に呼ぶ）
+    document.addEventListener('click', async function(e) {
+        const target = e.target;
+        if (target && target.classList && target.classList.contains('delete-workid-btn')) {
+            const workId = target.getAttribute('data-work-id');
+            if (!workId) return;
+
+            if (!confirm(`workId: ${workId}\n\nAzure Index から当該IDのデータを全て削除します。\nこの操作は元に戻せません。実行しますか？`)) {
+                return;
+            }
+
+            const basePath = getBasePath();
+            target.disabled = true;
+            target.textContent = '削除中...';
+
+            try {
+                const res = await fetch(`${basePath}/api/data-structuring/indexes/${encodeURIComponent(workId)}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                if (!res.ok) {
+                    const err = await res.text();
+                    alert(`削除に失敗しました\n${err}`);
+                } else {
+                    const result = await res.json().catch(()=>({}));
+                    console.log('削除結果:', result);
+                    alert('削除が完了しました');
+                    // 行を削除/更新
+                    const row = document.querySelector(`.upload-status-item[data-work-id="${workId}"]`);
+                    if (row) row.remove();
+                    // ローカル履歴からも取り除く
+                    const idx = uploadHistory.findIndex(i => i.workId === workId);
+                    if (idx >= 0) {
+                        uploadHistory.splice(idx, 1);
+                        localStorage.setItem('uploadHistory', JSON.stringify(uploadHistory));
+                    }
+                }
+            } catch (ex) {
+                console.error('Delete API error', ex);
+                alert('削除API呼び出しでエラーが発生しました');
+            } finally {
+                target.disabled = false;
+                target.textContent = '削除';
+            }
+        }
+    });
 
     // 処理状態を判定する関数
     function determineProcessingState(statusData) {
