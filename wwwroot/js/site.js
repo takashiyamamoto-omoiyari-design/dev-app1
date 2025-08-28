@@ -198,8 +198,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // ベースパスを取得
         const getBasePath = () => {
             const pathSegments = window.location.pathname.split('/');
-                if (pathSegments.length > 1 && pathSegments[1] === 'demo-app2') {
-        return '/demo-app2';
+                if (pathSegments.length > 1 && pathSegments[1] === 'trial-app2') {
+        return '/trial-app2';
             }
             return '';
         };

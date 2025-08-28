@@ -10,8 +10,15 @@ const fileUploader = (function() {
 
     // ユーザー認証情報取得
     async function getCurrentUser() {
+        const getBasePath = () => {
+            const pathSegments = window.location.pathname.split('/');
+            if (pathSegments.length > 1 && pathSegments[1] === 'trial-app2') {
+                return '/trial-app2';
+            }
+            return '';
+        };
         try {
-            const response = await fetch('/demo-app2/api/data-structuring/current-user', {
+            const response = await fetch(getBasePath() + '/api/data-structuring/current-user', {
                 method: 'GET',
                 credentials: 'include' // ASP.NET認証クッキーを含める
             });

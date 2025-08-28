@@ -268,41 +268,50 @@ app.Use(async (context, next) => {
     await next();
 });
 
-// 2. /demo-app2 パスのハンドラー (スラッシュなし) - ヘルスチェックのみ対応
-app.Use(async (context, next) => {
-    if (context.Request.Path.Value == "/demo-app2" && IsHealthCheckRequest(context)) {
-        Console.WriteLine("【Replit】基本パスヘルスチェック '/demo-app2' へのアクセス検出");
-        context.Response.ContentType = "text/plain";
-        await context.Response.WriteAsync("OK - Base Path");
-        return;
-    }
-    await next();
-});
+// 2. ベースパス（スラッシュなし）のハンドラー - ヘルスチェックのみ対応
+if (!string.IsNullOrEmpty(basePath))
+{
+    app.Use(async (context, next) => {
+        if (context.Request.Path.Value == basePath && IsHealthCheckRequest(context)) {
+            Console.WriteLine($"【Replit】基本パスヘルスチェック '{basePath}' へのアクセス検出");
+            context.Response.ContentType = "text/plain";
+            await context.Response.WriteAsync("OK - Base Path");
+            return;
+        }
+        await next();
+    });
+}
 
-// 3. /demo-app2/ パスのハンドラー (スラッシュあり) - Replitヘルスチェックと通常アクセスの両方に対応
-app.Use(async (context, next) => {
-    if (context.Request.Path.Value == "/demo-app2/" && IsHealthCheckRequest(context)) {
-        // Replitのヘルスチェックリクエストと判断
-        Console.WriteLine("【Replit】ヘルスチェックリクエスト '/demo-app2/' へのアクセス検出");
-        context.Response.ContentType = "text/plain";
-        await context.Response.WriteAsync("OK");
-        return;
-    }
-    
-    // 通常のアプリケーションリクエストはそのまま次のミドルウェアに渡す
-    await next();
-});
+// 3. ベースパス（末尾スラッシュあり）のハンドラー - Replitヘルスチェックと通常アクセスの両方に対応
+if (!string.IsNullOrEmpty(basePath))
+{
+    app.Use(async (context, next) => {
+        if (context.Request.Path.Value == (basePath.EndsWith("/") ? basePath : basePath + "/") && IsHealthCheckRequest(context)) {
+            // Replitのヘルスチェックリクエストと判断
+            Console.WriteLine($"【Replit】ヘルスチェックリクエスト '{(basePath.EndsWith("/") ? basePath : basePath + "/")}' へのアクセス検出");
+            context.Response.ContentType = "text/plain";
+            await context.Response.WriteAsync("OK");
+            return;
+        }
+        
+        // 通常のアプリケーションリクエストはそのまま次のミドルウェアに渡す
+        await next();
+    });
+}
 
-// 4. /demo-app2/health パスのハンドラー - ヘルスチェック専用パス
-app.Use(async (context, next) => {
-    if (context.Request.Path.Value == "/demo-app2/health") {
-        Console.WriteLine("【Replit】ヘルスパス '/demo-app2/health' へのアクセス検出");
-        context.Response.ContentType = "text/plain";
-        await context.Response.WriteAsync("OK - Health Check");
-        return;
-    }
-    await next();
-});
+// 4. ベースパス/health のハンドラー - ヘルスチェック専用パス
+if (!string.IsNullOrEmpty(basePath))
+{
+    app.Use(async (context, next) => {
+        if (context.Request.Path.Value == (basePath.TrimEnd('/') + "/health")) {
+            Console.WriteLine($"【Replit】ヘルスパス '{basePath.TrimEnd('/')}/health' へのアクセス検出");
+            context.Response.ContentType = "text/plain";
+            await context.Response.WriteAsync("OK - Health Check");
+            return;
+        }
+        await next();
+    });
+}
 
 // 5. デプロイ環境でのフォールバックミドルウェア - 404を防止
 app.Use(async (context, next) => {
@@ -313,7 +322,7 @@ app.Use(async (context, next) => {
         string path = context.Request.Path.Value.ToLower();
         
         // Replit固有のヘルスチェックパスと思われるものには常に「OK」を返す
-        if (path.EndsWith("/health") || path == "/" || path == "/demo-app2" || path == "/demo-app2/") {
+        if (path.EndsWith("/health") || path == "/" || (!string.IsNullOrEmpty(basePath) && (path == basePath.ToLower() || path == (basePath.ToLower().EndsWith("/") ? basePath.ToLower() : basePath.ToLower() + "/")))) {
             context.Response.StatusCode = 200;
             context.Response.ContentType = "text/plain";
             await context.Response.WriteAsync("OK");
@@ -323,14 +332,14 @@ app.Use(async (context, next) => {
 
 // Replitデプロイ環境の場合の特別な単一ヘルスチェックミドルウェア
 if (Environment.GetEnvironmentVariable("REPLIT_DEPLOYMENT") == "true") {
-    Console.WriteLine("【Replitデプロイ環境検出】/demo-app2/Health 専用ヘルスチェックミドルウェアを有効化");
+    Console.WriteLine($"【Replitデプロイ環境検出】{(string.IsNullOrEmpty(basePath) ? "/" : basePath.TrimEnd('/'))}/health 専用ヘルスチェックミドルウェアを有効化");
     
     // 特別なミドルウェア：指定されたパス (/demo-app2/Health) のみ対応
     app.Use(async (context, next) => {
         string path = context.Request.Path.Value?.ToLower();
         
         // Replitヘルスチェック - 指定されたパスのみに対応
-        if (path == "/demo-app2/health") {
+        if (!string.IsNullOrEmpty(basePath) && path == (basePath.TrimEnd('/').ToLower() + "/health")) {
             Console.WriteLine($"【Replit特別ミドルウェア】指定ヘルスチェックパス '{path}' に「OK」を応答");
             context.Response.ContentType = "text/plain";
             await context.Response.WriteAsync("OK");

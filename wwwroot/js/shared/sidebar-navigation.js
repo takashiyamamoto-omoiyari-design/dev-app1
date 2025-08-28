@@ -18,8 +18,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 // このコードはクライアントサイドでのみ実行されるため、サーバー側の
                 // 環境変数を直接取得できません。そのため、現在のパスを解析して推測します。
                 const pathSegments = window.location.pathname.split('/');
-                    if (pathSegments.length > 1 && pathSegments[1] === 'demo-app2') {
-        return '/demo-app2';
+                    if (pathSegments.length > 1 && pathSegments[1] === 'trial-app2') {
+        return '/trial-app2';
                 }
                 return '';
             };
@@ -124,8 +124,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // ベースパスを取得
             const pathSegments = window.location.pathname.split('/');
                         let basePath = '';
-                    if (pathSegments.length > 1 && pathSegments[1] === 'demo-app2') {
-            basePath = '/demo-app2';
+                    if (pathSegments.length > 1 && pathSegments[1] === 'trial-app2') {
+            basePath = '/trial-app2';
             }
             
             // リンクを常に最新に設定
