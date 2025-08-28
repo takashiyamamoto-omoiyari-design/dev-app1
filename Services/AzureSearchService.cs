@@ -1487,8 +1487,8 @@ namespace AzureRag.Services
                         var batch = IndexDocumentsBatch.Delete("id", ids);
                         try
                         {
-                            var delResult = await _searchClient.IndexDocumentsAsync(batch);
-                            int success = delResult.Results.Count(r => r.Succeeded);
+                            var delResponse = await _searchClient.IndexDocumentsAsync(batch);
+                            int success = delResponse.Value.Results.Count(r => r.Succeeded);
                             totalDeleted += success;
                         }
                         catch (Exception ex)
