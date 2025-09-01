@@ -3222,8 +3222,11 @@ namespace AzureRag.Controllers
                 {
                 }
 
+                // 直前に本メソッド内で検索済みの結果がある場合はそれを優先（documentContextを生成した検索結果）
+                var effectiveSources = (searchResults != null && searchResults.Any()) ? searchResults : sources;
+
                 // ソース情報をレスポンス用に変換
-                var sourcesResponse = sources.Select((source, index) =>
+                var sourcesResponse = effectiveSources.Select((source, index) =>
                 {
                     var filepath = source.Filepath;
 
@@ -3240,7 +3243,13 @@ namespace AzureRag.Controllers
                         name = displayName,
                         id = fileId,
                         filepath = filepath,
-                        fileType = "PDF" // ファイルタイプ情報を追加
+                        fileType = "PDF", // ファイルタイプ情報を追加
+                        // 追加フィールド（モーダル表示用）
+                        score = source.Score,
+                        pageNumber = source.PageNumber,
+                        chunkNumber = source.ChunkNumber,
+                        title = source.Title,
+                        content = source.Content
                     };
                 }).ToArray();
 
@@ -3253,6 +3262,9 @@ namespace AzureRag.Controllers
                     display_text = $"「{s.OriginalKeyword}」の関連語: {string.Join(", ", s.RelatedSynonyms)}"
                 }).ToArray();
 
+                // 返却前ログ（sources件数）
+                _logger.LogInformation("🧾 CHAT返却: sources件数={Count}", sources.Count);
+
                 // レスポンスを組み立て（常に同じ構造）
                 var response = new
                 {
@@ -3262,7 +3274,8 @@ namespace AzureRag.Controllers
                     synonyms = synonymInfo,
                     debug_info = new { 
                         timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                        synonyms_used = usedSynonyms.Count
+                        synonyms_used = usedSynonyms.Count,
+                        search_results_count = sources.Count
                     }
                 };
 
