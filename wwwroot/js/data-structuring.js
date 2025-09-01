@@ -3713,10 +3713,10 @@ ${JSON.stringify({
                     <div style="display:flex; align-items:center; gap:8px;">
                         <div style="font-weight:600;">#${idx+1}</div>
                         <div style="color:#6b7280; font-size:.85rem;">score: ${(s.score??0).toFixed(4)}</div>
-                        <div style="color:#6b7280; font-size:.85rem;">workId: ${s.filepath || s.workId || '—'}</div>
+                        <div style="color:#111827; font-size:.9rem; font-weight:600;">${title}</div>
                         <div style="color:#6b7280; font-size:.85rem;">${page>=0 ? `${page+1}枚目` : 'ページ情報なし'}${chunk?` / チャンク${chunk}`:''}</div>
                     </div>
-                    <div style="margin-top:4px; font-weight:600; color:#111827;">${title}</div>
+                    <div style="margin-top:4px; color:#6b7280; font-size:.8rem;">workId: ${s.filepath || s.workId || '—'}</div>
                     <div style="margin-top:6px; color:#111827; white-space:pre-wrap;">${(s.content||'').slice(0,400)}</div>
                 </div>`;
             }).join('');
