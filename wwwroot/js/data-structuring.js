@@ -3566,6 +3566,12 @@ ${JSON.stringify({
         // messageがundefinedの場合のデフォルト値を設定
         const safeMessage = message || "申し訳ありませんが、応答の生成中にエラーが発生しました。";
         
+        const resultCount = Array.isArray(sources) ? sources.length : 0;
+        const modalLinkHtml = resultCount > 0 ? `
+            <div style="margin-top:8px; font-size: 0.8rem; color:#6b7280;">
+                <a href="#" class="open-results-modal" style="color:#2563eb; text-decoration:underline;">検索結果を全件表示 (${resultCount})</a>
+            </div>` : '';
+
         const messageHtml = `
             <div class="avatar system-avatar">I</div>
             <div class="message-bubble system-bubble">
@@ -3573,6 +3579,7 @@ ${JSON.stringify({
                 ${keywordsHtml}
                 ${synonymsHtml}
                 <div style="max-height: 400px; overflow-y: auto; white-space: pre-wrap;">${safeMessage.replace(/\n/g, '<br>')}</div>
+                ${modalLinkHtml}
                 ${sourcesHtml}
             </div>
         `;
@@ -3660,6 +3667,103 @@ ${JSON.stringify({
                     console.error('ソースクリック処理中にエラーが発生:', error);
                 }
             });
+        });
+
+        // 検索結果全件モーダル
+        const modalTrigger = messageEl.querySelector('.open-results-modal');
+        if (modalTrigger) {
+            modalTrigger.addEventListener('click', function(e) {
+                e.preventDefault();
+                openResultsModal(sources || []);
+            });
+        }
+    }
+
+    // 検索結果モーダルを開く
+    function openResultsModal(sources) {
+        // 既存を消す
+        const existing = document.getElementById('results-modal');
+        if (existing) existing.remove();
+
+        // スコア降順にソート（score がなければそのまま）
+        const sorted = [...sources].sort((a,b) => (b.score||0) - (a.score||0));
+        // ページ番号でグルーピング（pageNumber がなければ -1）
+        const groups = {};
+        sorted.forEach(s => {
+            const page = (typeof s.pageNumber === 'number') ? s.pageNumber : (s.page_no || -1);
+            const key = page;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(s);
+        });
+
+        const pages = Object.keys(groups).map(k => parseInt(k,10)).sort((a,b)=>a-b);
+        const modal = document.createElement('div');
+        modal.id = 'results-modal';
+        modal.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:2000; display:flex; align-items:center; justify-content:center;';
+        const panel = document.createElement('div');
+        panel.style.cssText = 'background:#fff; width: min(900px, 95vw); max-height: 90vh; border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,.15); display:flex; flex-direction:column;';
+        panel.innerHTML = `
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid #e5e7eb;">
+                <div style="font-weight:600;">検索結果 全件表示（${sorted.length}件）</div>
+                <button id="results-modal-close" style="background:none; border:none; font-size:1.1rem; cursor:pointer;">×</button>
+            </div>
+            <div style="display:flex; gap:12px; padding:10px 12px; border-bottom:1px solid #e5e7eb;">
+                <div>ページ:</div>
+                <div id="results-page-tabs" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
+            </div>
+            <div id="results-list" style="padding:10px 12px; overflow:auto;"></div>
+        `;
+        modal.appendChild(panel);
+        document.body.appendChild(modal);
+
+        function renderTabs() {
+            const tabs = panel.querySelector('#results-page-tabs');
+            tabs.innerHTML = '';
+            const allBtn = document.createElement('button');
+            allBtn.textContent = 'すべて';
+            allBtn.style.cssText = tabStyle();
+            allBtn.addEventListener('click', () => renderList(sorted));
+            tabs.appendChild(allBtn);
+            pages.forEach(p => {
+                const b = document.createElement('button');
+                b.textContent = (p >= 0) ? `${p+1}枚目` : 'ページ情報なし';
+                b.style.cssText = tabStyle();
+                b.addEventListener('click', () => renderList(groups[p]));
+                tabs.appendChild(b);
+            });
+        }
+
+        function renderList(items){
+            const list = panel.querySelector('#results-list');
+            list.innerHTML = (items||[]).map((s,idx)=>{
+                const page = (typeof s.pageNumber === 'number') ? s.pageNumber : (s.page_no ?? -1);
+                const chunk = (typeof s.chunkNumber === 'number') ? s.chunkNumber : (s.chunk_index ?? 0);
+                const title = s.title || s.name || s.fileType || '—';
+                return `
+                <div style="padding:10px 8px; border-bottom:1px solid #f3f4f6;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div style="font-weight:600;">#${idx+1}</div>
+                        <div style="color:#6b7280; font-size:.85rem;">score: ${(s.score??0).toFixed(4)}</div>
+                        <div style="color:#6b7280; font-size:.85rem;">workId: ${s.filepath || s.workId || '—'}</div>
+                        <div style="color:#6b7280; font-size:.85rem;">${page>=0 ? `${page+1}枚目` : 'ページ情報なし'}${chunk?` / チャンク${chunk}`:''}</div>
+                    </div>
+                    <div style="margin-top:6px; color:#111827; white-space:pre-wrap;">${(s.content||'').slice(0,400)}</div>
+                </div>`;
+            }).join('');
+        }
+
+        function tabStyle(){
+            return 'background:#fff; border:1px solid #d1d5db; border-radius:4px; padding:4px 8px; cursor:pointer;';
+        }
+
+        renderTabs();
+        renderList(sorted);
+
+        panel.querySelector('#results-modal-close').addEventListener('click', ()=>{
+            modal.remove();
+        });
+        modal.addEventListener('click', (e)=>{
+            if (e.target === modal) modal.remove();
         });
     }
 

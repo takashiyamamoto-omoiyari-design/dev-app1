@@ -506,9 +506,9 @@ namespace AzureRag.Controllers
                 }
                 else if (searchResults.Any())
                 {
-                    context = string.Join("\n\n", searchResults.Take(5).Select(r => 
+                    context = string.Join("\n\n", searchResults.Take(10).Select(r => 
                         $"【文書ID: {r.Id}】\n{r.Content}"));
-                    _logger.LogInformation("🔍 Azure Search結果からコンテキスト構築: {Length}文字", context.Length);
+                    _logger.LogInformation("🔍 Azure Search結果からコンテキスト構築(Top10): {Length}文字", context.Length);
                 }
                 else
                 {
