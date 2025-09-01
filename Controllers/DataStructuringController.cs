@@ -3224,9 +3224,11 @@ namespace AzureRag.Controllers
 
                 // 直前に本メソッド内で検索済みの結果がある場合はそれを優先（documentContextを生成した検索結果）
                 var effectiveSources = (searchResults != null && searchResults.Any()) ? searchResults : sources;
+                // 上位30件のみをフロントに返す（表示最適化）
+                var topSources = effectiveSources?.Take(30).ToList() ?? new List<Models.SearchResult>();
 
                 // ソース情報をレスポンス用に変換
-                var sourcesResponse = effectiveSources.Select((source, index) =>
+                var sourcesResponse = topSources.Select((source, index) =>
                 {
                     var filepath = source.Filepath;
 
@@ -3263,7 +3265,7 @@ namespace AzureRag.Controllers
                 }).ToArray();
 
                 // 返却前ログ（sources件数）
-                _logger.LogInformation("🧾 CHAT返却: sources件数={Count}", sources.Count);
+                _logger.LogInformation("🧾 CHAT返却: sources件数(上位30件に制限)={Count}", sourcesResponse.Length);
 
                 // レスポンスを組み立て（常に同じ構造）
                 var response = new
@@ -3275,7 +3277,7 @@ namespace AzureRag.Controllers
                     debug_info = new { 
                         timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                         synonyms_used = usedSynonyms.Count,
-                        search_results_count = sources.Count
+                        search_results_count = sourcesResponse.Length
                     }
                 };
 
