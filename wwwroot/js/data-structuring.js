@@ -454,7 +454,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     .then(d => {
                         if (d && d.url) {
                             currentFileLink.href = d.url;
-                            currentFile.style.display = '';
+                            currentFile.style.display = 'block';
                         }
                     }).catch(()=>{});
             } else {
@@ -475,7 +475,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (info.hasFile && info.fileUrl) {
                         currentFileLink.textContent = info.fileName || '-';
                         currentFileLink.href = info.fileUrl;
-                        currentFile.style.display = '';
+                        currentFile.style.display = 'block';
                     } else {
                         currentFile.style.display = 'none';
                     }
