@@ -6498,16 +6498,8 @@ ${JSON.stringify({
                 }
             }
             
-            // 処理が完了している場合、または進捗情報がない場合はページをリロード
-            console.log(`ページをリロードしてworkId=${workId}を設定します`);
-            
-            // 現在のURLを取得
-            const url = new URL(window.location.href);
-            // workIdパラメータを設定
-            url.searchParams.set('workId', workId);
-            
-            // 更新されたURLに移動（ページをリロード）
-            window.location.href = url.toString();
+            // 処理が完了している場合、または進捗情報がない場合はリロードせず、そのまま表示維持
+            console.log(`リロードせずにworkId=${workId}のビューを維持します`);
             
         } catch (error) {
             console.error('データ表示中にエラーが発生:', error);
