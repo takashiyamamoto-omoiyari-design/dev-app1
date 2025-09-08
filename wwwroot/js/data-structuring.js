@@ -6487,7 +6487,8 @@ ${JSON.stringify({
                     if (info && info.hasFile && info.fileUrl && currentFile && currentFileLink) {
                         currentFileLink.textContent = info.fileName || '-';
                         currentFileLink.href = info.fileUrl;
-                        currentFile.style.display = '';
+                        // 明示的に表示（サーバー側の初期styleが残っていても強制表示）
+                        currentFile.style.display = 'block';
                     } else if (currentFile) {
                         // hasFile=false の場合は非表示
                         currentFile.style.display = 'none';
