@@ -439,50 +439,11 @@ document.addEventListener('DOMContentLoaded', function() {
         return { include_categories: [], pages: [] };
     }
 
-    // アップロード後のPDF名リンク表示（履歴から）
-    try {
-        const urlParamCheck = new URLSearchParams(window.location.search);
-        const hasParamWorkIdInit = !!urlParamCheck.get('workId');
-        const history = loadUploadHistory();
-        const latest = history && history.length > 0 ? history[0] : null;
-        // URLにworkId指定がある場合は、初期表示の最新履歴によるリンク表示はスキップ（競合防止）
-        if (!hasParamWorkIdInit && latest && currentFile && currentFileLink) {
-            const fileName = latest.fileName || '-';
-            const workId = latest.workId || latest.id || '';
-            currentFileLink.textContent = fileName;
-            fetch(getBasePath() + `/api/storage/workid-info?work_id=${encodeURIComponent(workId)}`, { credentials: 'include' })
-                .then(r => r.ok ? r.json() : null)
-                .then(info => {
-                    const fallbackUrl = getBasePath() + `/api/storage/original?work_id=${encodeURIComponent(workId)}`;
-                    currentFileLink.href = (info && info.fileUrl) ? info.fileUrl : fallbackUrl;
-                    currentFile.style.display = 'block';
-                }).catch(()=>{
-                    const fallbackUrl = getBasePath() + `/api/storage/original?work_id=${encodeURIComponent(workId)}`;
-                    currentFileLink.href = fallbackUrl;
-                    currentFile.style.display = 'block';
-                });
-        }
-    } catch (_) {}
+    // アップロード後の自動表示は無効化（「表示」ボタン押下時のみ表示）
+    try { /* intentionally disabled */ } catch (_) {}
 
-    // URLのworkIdが指定されている場合は、そのworkIdの原本PDFリンクを表示
-    try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const paramWorkId = urlParams.get('workId');
-        if (paramWorkId && currentFile && currentFileLink) {
-            fetch(getBasePath() + `/api/storage/workid-info?work_id=${encodeURIComponent(paramWorkId)}`, { credentials: 'include' })
-                .then(r => r.ok ? r.json() : null)
-                .then(info => {
-                    const fallbackUrl = getBasePath() + `/api/storage/original?work_id=${encodeURIComponent(paramWorkId)}`;
-                    currentFileLink.textContent = (info && info.fileName) ? info.fileName : '-';
-                    currentFileLink.href = (info && info.fileUrl) ? info.fileUrl : fallbackUrl;
-                    currentFile.style.display = 'block';
-                }).catch(()=>{
-                    const fallbackUrl = getBasePath() + `/api/storage/original?work_id=${encodeURIComponent(paramWorkId)}`;
-                    currentFileLink.href = fallbackUrl;
-                    currentFile.style.display = 'block';
-                });
-        }
-    } catch (_) {}
+    // URLパラメータによる自動表示は無効化（「表示」ボタン押下時のみ表示）
+    try { /* intentionally disabled */ } catch (_) {}
     // ダウンロードボタンと一括ダウンロードボタンを非表示にする
     const downloadBtn = document.getElementById('download-btn');
     if (downloadBtn) downloadBtn.style.display = 'none';
