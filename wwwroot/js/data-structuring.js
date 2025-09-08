@@ -448,20 +448,19 @@ document.addEventListener('DOMContentLoaded', function() {
         // URLにworkId指定がある場合は、初期表示の最新履歴によるリンク表示はスキップ（競合防止）
         if (!hasParamWorkIdInit && latest && currentFile && currentFileLink) {
             const fileName = latest.fileName || '-';
+            const workId = latest.workId || latest.id || '';
             currentFileLink.textContent = fileName;
-            // 署名URL取得
-            if (latest.s3Key) {
-                fetch(getBasePath() + '/api/storage/s3-signed-url?key=' + encodeURIComponent(latest.s3Key), { credentials: 'include' })
-                    .then(r => r.ok ? r.json() : null)
-                    .then(d => {
-                        if (d && d.url) {
-                            currentFileLink.href = d.url;
-                            currentFile.style.display = 'block';
-                        }
-                    }).catch(()=>{});
-            } else {
-                // s3Keyが無い場合はそのまま非表示のまま
-            }
+            fetch(getBasePath() + `/api/storage/workid-info?work_id=${encodeURIComponent(workId)}`, { credentials: 'include' })
+                .then(r => r.ok ? r.json() : null)
+                .then(info => {
+                    const fallbackUrl = getBasePath() + `/api/storage/original?work_id=${encodeURIComponent(workId)}`;
+                    currentFileLink.href = (info && info.fileUrl) ? info.fileUrl : fallbackUrl;
+                    currentFile.style.display = 'block';
+                }).catch(()=>{
+                    const fallbackUrl = getBasePath() + `/api/storage/original?work_id=${encodeURIComponent(workId)}`;
+                    currentFileLink.href = fallbackUrl;
+                    currentFile.style.display = 'block';
+                });
         }
     } catch (_) {}
 
@@ -473,15 +472,15 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch(getBasePath() + `/api/storage/workid-info?work_id=${encodeURIComponent(paramWorkId)}`, { credentials: 'include' })
                 .then(r => r.ok ? r.json() : null)
                 .then(info => {
-                    if (!info) return;
-                    if (info.hasFile && info.fileUrl) {
-                        currentFileLink.textContent = info.fileName || '-';
-                        currentFileLink.href = info.fileUrl;
-                        currentFile.style.display = 'block';
-                    } else {
-                        currentFile.style.display = 'none';
-                    }
-                }).catch(()=>{});
+                    const fallbackUrl = getBasePath() + `/api/storage/original?work_id=${encodeURIComponent(paramWorkId)}`;
+                    currentFileLink.textContent = (info && info.fileName) ? info.fileName : '-';
+                    currentFileLink.href = (info && info.fileUrl) ? info.fileUrl : fallbackUrl;
+                    currentFile.style.display = 'block';
+                }).catch(()=>{
+                    const fallbackUrl = getBasePath() + `/api/storage/original?work_id=${encodeURIComponent(paramWorkId)}`;
+                    currentFileLink.href = fallbackUrl;
+                    currentFile.style.display = 'block';
+                });
         }
     } catch (_) {}
     // ダウンロードボタンと一括ダウンロードボタンを非表示にする
