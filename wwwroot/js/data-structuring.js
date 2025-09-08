@@ -108,8 +108,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const uploadBtn = document.getElementById('upload-btn');
     const currentFile = document.getElementById('current-file');
     const currentFileLink = document.getElementById('current-file-link');
-    // 既定で常に表示（サーバー出力で display:none が残っても上書き）
-    try { if (currentFile) currentFile.style.display = 'block'; } catch(_) {}
+    // 既定では非表示（アップロード状況の「表示」ボタン押下時のみ表示）
+    try { if (currentFile) currentFile.style.display = 'none'; } catch(_) {}
     const diffAnalyzeBtn = document.getElementById('diff-analyze-btn');
     const diffModal = document.getElementById('diff-modal');
     const diffModalClose = document.getElementById('diff-modal-close');

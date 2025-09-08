@@ -75,7 +75,8 @@ namespace AzureRag.Controllers
                     return cand1; // 既定を返す
                 }
 
-                var path = info.SavedRelativePath;
+                // 実ファイルパスを解決
+                var path = ResolvePath(info.SavedRelativePath);
 
                 if (!System.IO.File.Exists(path))
                 {
