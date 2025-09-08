@@ -92,8 +92,8 @@
             <div class="left-resizer" id="leftResizer"></div>
             <button class="upload-btn" id="upload-btn">アップロード</button>
             <!-- アップロードオプション（fewshot） - アップロードボタンの下、PDFリンクの上に配置 -->
-            <div id="upload-options" style="display:flex; flex-direction:column; gap:6px; padding: 8px 12px;">
-                <label style="display:flex; align-items:center; gap:6px; font-size:.9rem;">
+            <div id="upload-options" style="display:none; flex-direction:column; gap:6px; padding: 8px 12px;">
+                <label style="display:none; align-items:center; gap:6px; font-size:.9rem;">
                     <input type="checkbox" id="opt-fewshot" /> fewshot学習する
                 </label>
                 <div style="display:flex; align-items:center; gap:8px;">
@@ -105,7 +105,7 @@
                 </select>
             </div>
             <!-- 現在のファイル表示（PDF名リンク） -->
-            <div id="current-file" style="display:none; padding: 8px 12px; border-bottom: 1px solid #e5e7eb;">
+            <div id="current-file" style="display:block; padding: 8px 12px; border-bottom: 1px solid #e5e7eb;">
                 <i class="fas fa-file-pdf" style="margin-right: 6px; color:#ef4444;"></i>
                 <a id="current-file-link" href="#" target="_blank" rel="noopener" style="text-decoration:none; color:#2563eb;">-</a>
             </div>

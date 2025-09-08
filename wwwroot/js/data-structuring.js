@@ -3567,10 +3567,8 @@ ${JSON.stringify({
         const safeMessage = message || "申し訳ありませんが、応答の生成中にエラーが発生しました。";
         
         const resultCount = Array.isArray(sources) ? sources.length : 0;
-        const modalLinkHtml = resultCount > 0 ? `
-            <div style="margin-top:8px; font-size: 0.8rem; color:#6b7280;">
-                <a href="#" class="open-results-modal" style="color:#2563eb; text-decoration:underline;">検索結果を全件表示 (${resultCount})</a>
-            </div>` : '';
+        // リンクは一時的に非表示（将来再表示のためロジックは残す）
+        const modalLinkHtml = '';
 
         const messageHtml = `
             <div class="avatar system-avatar">I</div>
