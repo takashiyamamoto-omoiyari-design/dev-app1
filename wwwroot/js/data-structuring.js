@@ -108,6 +108,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const uploadBtn = document.getElementById('upload-btn');
     const currentFile = document.getElementById('current-file');
     const currentFileLink = document.getElementById('current-file-link');
+    // 既定で常に表示（サーバー出力で display:none が残っても上書き）
+    try { if (currentFile) currentFile.style.display = 'block'; } catch(_) {}
     const diffAnalyzeBtn = document.getElementById('diff-analyze-btn');
     const diffModal = document.getElementById('diff-modal');
     const diffModalClose = document.getElementById('diff-modal-close');
