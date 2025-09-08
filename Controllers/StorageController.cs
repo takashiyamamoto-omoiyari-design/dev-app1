@@ -119,17 +119,49 @@ namespace AzureRag.Controllers
 
                 var info = await _workIdManagementService.GetWorkIdInfoAsync(work_id);
                 var hasFile = info != null && !string.IsNullOrEmpty(info.SavedRelativePath);
-                // できる限りプロキシヘッダを優先してスキーム/ホストを決定
+                // できる限りプロキシヘッダを優先してスキーム/ホスト/ポート/プレフィックスを決定
                 string scheme = Request.Headers["X-Forwarded-Proto"].ToString();
                 if (string.IsNullOrWhiteSpace(scheme)) scheme = Request.Scheme;
                 string host = Request.Headers["X-Forwarded-Host"].ToString();
-                if (string.IsNullOrWhiteSpace(host)) host = Request.Host.ToString();
+                string port = Request.Headers["X-Forwarded-Port"].ToString();
+                if (string.IsNullOrWhiteSpace(host)) host = Request.Host.Host;
+                // ポート付与（X-Forwarded-Host にポートが含まれていない場合）
+                string hostWithPort = host;
+                bool hostHasPort = host.Contains(":");
+                if (!hostHasPort)
+                {
+                    if (!string.IsNullOrWhiteSpace(port))
+                    {
+                        // 既定ポートは付与しない
+                        bool isHttps = string.Equals(scheme, "https", StringComparison.OrdinalIgnoreCase);
+                        if (!(isHttps && port == "443") && !(!isHttps && port == "80"))
+                        {
+                            hostWithPort = host + ":" + port;
+                        }
+                    }
+                    else
+                    {
+                        // Request.Host のポートを利用
+                        if (Request.Host.Port.HasValue)
+                        {
+                            var p = Request.Host.Port.Value;
+                            if (!(scheme == "https" && p == 443) && !(scheme == "http" && p == 80))
+                            {
+                                hostWithPort = host + ":" + p.ToString();
+                            }
+                        }
+                    }
+                }
+                // プレフィックス（例: /trial-app2）
+                string prefix = Request.Headers["X-Forwarded-Prefix"].ToString();
+                if (string.IsNullOrWhiteSpace(prefix)) prefix = Request.PathBase.Value;
                 // 最低限のフォールバック: 既知ドメインならhttpsを既定に
-                if (string.Equals(scheme, "http", StringComparison.OrdinalIgnoreCase) && host.Contains("ilu.co.jp"))
+                if (string.Equals(scheme, "http", StringComparison.OrdinalIgnoreCase) && hostWithPort.Contains("ilu.co.jp"))
                 {
                     scheme = "https";
                 }
-                var fileUrl = hasFile ? $"{scheme}://{host}{Request.PathBase}/api/storage/original?work_id={Uri.EscapeDataString(work_id)}" : null;
+                if (string.IsNullOrEmpty(prefix)) prefix = string.Empty;
+                var fileUrl = hasFile ? $"{scheme}://{hostWithPort}{prefix}/api/storage/original?work_id={Uri.EscapeDataString(work_id)}" : null;
 
                 return Ok(new {
                     workId = work_id,
