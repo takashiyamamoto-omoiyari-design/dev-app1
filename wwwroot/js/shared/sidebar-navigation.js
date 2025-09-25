@@ -13,13 +13,13 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // ベースパスを取得
             const getBasePath = () => {
-                // APP_BASE_PATH環境変数に対応: /demo-app2 などが設定されている場合は
+                // APP_BASE_PATH環境変数に対応: /dev-app1 などが設定されている場合は
                 // それを使用し、設定されていない場合は空文字列（ルート）を使用
                 // このコードはクライアントサイドでのみ実行されるため、サーバー側の
                 // 環境変数を直接取得できません。そのため、現在のパスを解析して推測します。
                 const pathSegments = window.location.pathname.split('/');
-                    if (pathSegments.length > 1 && pathSegments[1] === 'trial-app2') {
-        return '/trial-app2';
+                    if (pathSegments.length > 1 && pathSegments[1] === 'dev-app1') {
+        return '/dev-app1';
                 }
                 return '';
             };
@@ -124,8 +124,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // ベースパスを取得
             const pathSegments = window.location.pathname.split('/');
                         let basePath = '';
-                    if (pathSegments.length > 1 && pathSegments[1] === 'trial-app2') {
-            basePath = '/trial-app2';
+                    if (pathSegments.length > 1 && pathSegments[1] === 'dev-app1') {
+            basePath = '/dev-app1';
             }
             
             // リンクを常に最新に設定

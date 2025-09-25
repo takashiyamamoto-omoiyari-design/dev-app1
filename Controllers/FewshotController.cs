@@ -37,16 +37,16 @@ namespace AzureRag.Controllers
             {
                 if (string.IsNullOrWhiteSpace(work_id)) return BadRequest(new { error = "work_idが必要です" });
 
-                // 既存の保存先（storage/images など）を走査。なければ /var/lib/demo-app2/tmp/pdf_* も併用
+                // 既存の保存先（storage/images など）を走査。なければ /var/lib/dev-app1/tmp/pdf_* も併用
                 var candidates = new List<string>();
                 // 相対（現在ディレクトリ直下）
                 candidates.Add(Path.Combine("storage", "images"));
                 candidates.Add(Path.Combine("storage", "tmp"));
                 // 発行ディレクトリ配下
-                candidates.Add(Path.Combine("/opt/app/demo-app2/publish", "storage", "images"));
-                candidates.Add(Path.Combine("/opt/app/demo-app2/publish", "storage", "tmp"));
+                candidates.Add(Path.Combine("/opt/app/dev-app1/publish", "storage", "images"));
+                candidates.Add(Path.Combine("/opt/app/dev-app1/publish", "storage", "tmp"));
                 // 外部作業用
-                candidates.Add(Path.Combine("/var/lib/demo-app2/tmp"));
+                candidates.Add(Path.Combine("/var/lib/dev-app1/tmp"));
 
                 var items = new List<object>();
                 _logger.LogInformation("[FewshotPages] START work_id={WorkId}", work_id);

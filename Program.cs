@@ -52,9 +52,9 @@ builder.Configuration.AddJsonFile("appsettings.MultiIndex.json", optional: true,
 // 環境変数を一番後ろに追加して最優先にする（MultiIndexの空値で上書きされないように）
 builder.Configuration.AddEnvironmentVariables();
 // Users を外部JSONから動的リロード（最終優先）。再起動なしでのユーザー追加・変更を可能にする
-builder.Configuration.AddJsonFile("/etc/demo-app2.users.json", optional: true, reloadOnChange: true);
+builder.Configuration.AddJsonFile("/etc/dev-app1.users.json", optional: true, reloadOnChange: true);
 // IndexConfiguration も外部JSONから動的リロード（最終優先）。再起動なしでのインデックス定義変更を可能にする
-builder.Configuration.AddJsonFile("/etc/demo-app2.indexes.json", optional: true, reloadOnChange: true);
+builder.Configuration.AddJsonFile("/etc/dev-app1.indexes.json", optional: true, reloadOnChange: true);
 
 // ベースパス設定を追加
 var basePath = Environment.GetEnvironmentVariable("APP_BASE_PATH") ?? "";
@@ -334,7 +334,7 @@ app.Use(async (context, next) => {
 if (Environment.GetEnvironmentVariable("REPLIT_DEPLOYMENT") == "true") {
     Console.WriteLine($"【Replitデプロイ環境検出】{(string.IsNullOrEmpty(basePath) ? "/" : basePath.TrimEnd('/'))}/health 専用ヘルスチェックミドルウェアを有効化");
     
-    // 特別なミドルウェア：指定されたパス (/demo-app2/Health) のみ対応
+// 特別なミドルウェア：指定されたパス (/dev-app1/Health) のみ対応
     app.Use(async (context, next) => {
         string path = context.Request.Path.Value?.ToLower();
         

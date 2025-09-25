@@ -12,8 +12,8 @@ const fileUploader = (function() {
     async function getCurrentUser() {
         const getBasePath = () => {
             const pathSegments = window.location.pathname.split('/');
-            if (pathSegments.length > 1 && pathSegments[1] === 'trial-app2') {
-                return '/trial-app2';
+            if (pathSegments.length > 1 && pathSegments[1] === 'dev-app1') {
+                return '/dev-app1';
             }
             return '';
         };

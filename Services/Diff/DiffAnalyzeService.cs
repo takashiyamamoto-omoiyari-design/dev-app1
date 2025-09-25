@@ -139,7 +139,7 @@ namespace AzureRag.Services.Diff
             if (string.IsNullOrWhiteSpace(genBaseOut))
             {
                 // 既定の永続領域
-                genBaseOut = "/var/lib/demo-app2/tmp";
+                genBaseOut = "/var/lib/dev-app1/tmp";
             }
             Directory.CreateDirectory(genBaseOut);
             bool triedGeneration = false;

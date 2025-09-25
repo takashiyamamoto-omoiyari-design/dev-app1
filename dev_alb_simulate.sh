@@ -5,7 +5,7 @@
 # 使用方法: ./dev_alb_simulate.sh
 
 # ベースパスを設定 - ALBの設定に合わせる
-export APP_BASE_PATH="/demo-app2"
+export APP_BASE_PATH="/dev-app1"
 echo "ベースパス設定: $APP_BASE_PATH"
 
 # アプリケーションを実行

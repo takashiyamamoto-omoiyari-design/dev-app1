@@ -153,7 +153,7 @@ namespace AzureRag.Controllers
                         }
                     }
                 }
-                // プレフィックス（例: /trial-app2）
+                // プレフィックス（例: /dev-app1）
                 string prefix = Request.Headers["X-Forwarded-Prefix"].ToString();
                 if (string.IsNullOrWhiteSpace(prefix)) prefix = Request.PathBase.Value;
                 // 最低限のフォールバック: 既知ドメインならhttpsを既定に

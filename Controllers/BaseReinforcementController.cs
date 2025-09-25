@@ -14,8 +14,8 @@ namespace AzureRag.Controllers
         public BaseReinforcementController(ILogger logger = null)
         {
             _logger = logger;
-            // 保存ベースディレクトリ（Linux本番は /var/lib/demo-app2、無ければローカルstorage）
-            var baseDir = "/var/lib/demo-app2";
+            // 保存ベースディレクトリ（Linux本番は /var/lib/dev-app1、無ければローカルstorage）
+            var baseDir = "/var/lib/dev-app1";
             if (!Directory.Exists(baseDir)) baseDir = Path.Combine("storage");
             _rlStorageDirectory = Path.Combine(baseDir, "reinforcement");
             if (!Directory.Exists(_rlStorageDirectory)) Directory.CreateDirectory(_rlStorageDirectory);

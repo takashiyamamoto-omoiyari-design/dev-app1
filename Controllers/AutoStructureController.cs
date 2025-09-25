@@ -218,11 +218,11 @@ namespace AzureRag.Controllers
         {
             try
             {
-                // 保存ベースパスを設定から取得（未設定時は /var/lib/demo-app2/original-uploads に保存）
+                // 保存ベースパスを設定から取得（未設定時は /var/lib/dev-app1/original-uploads に保存）
                 var configuredBase = _configuration["Storage:OriginalBasePath"];
                 var baseDir = !string.IsNullOrWhiteSpace(configuredBase)
                     ? configuredBase
-                    : "/var/lib/demo-app2/original-uploads";
+                    : "/var/lib/dev-app1/original-uploads";
                 var user = User?.Identity?.Name ?? "unknown";
                 var today = DateTime.UtcNow;
                 var safeFileName = SanitizeFileName(file.FileName);

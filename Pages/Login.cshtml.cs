@@ -67,10 +67,10 @@ namespace AzureRag.Pages
             }
             
             // フォールバック: パスから判定
-            if (path != null && path.StartsWith("/trial-app2"))
+            if (path != null && path.StartsWith("/dev-app1"))
             {
-                _logger.LogInformation($"GetBasePath: /trial-app2 を返します");
-                return "/trial-app2";
+                _logger.LogInformation($"GetBasePath: /dev-app1 を返します");
+                return "/dev-app1";
             }
             
             _logger.LogInformation($"GetBasePath: 空文字を返します");
