@@ -3999,7 +3999,7 @@ namespace AzureRag.Controllers
                 
                 var apiRequest = new
                 {
-                    userId = HttpContext.User?.Identity?.Name ?? string.Empty,
+                    userId = controller.HttpContext?.User?.Identity?.Name ?? string.Empty,
                     password = string.Empty,
                     type = "",
                     text = message
