@@ -28,8 +28,8 @@ namespace AzureRag.Services
         private readonly HttpClient _httpClient;
         private readonly ILogger<AutoStructureService> _logger;
         private string _apiUrl;
-        private readonly string _userId;
-        private readonly string _password;
+        private string _userId;
+        private string _password;
         
         // AWS ALB設定
         private readonly string _awsProfile;
@@ -42,15 +42,22 @@ namespace AzureRag.Services
 
         private readonly IConfiguration _configuration;
 
+        private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor;
+        private readonly AzureRag.Services.UserDirectory.IExternalCredentialResolver _credentialResolver;
+
         public AutoStructureService(
             IHttpClientFactory httpClientFactory,
             ILogger<AutoStructureService> logger,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor,
+            AzureRag.Services.UserDirectory.IExternalCredentialResolver credentialResolver)
         {
             _httpClient = httpClientFactory.CreateClient("AutoStructureClient");
             _httpClient.Timeout = TimeSpan.FromSeconds(120); // タイムアウトを120秒に設定
             _logger = logger;
             _configuration = configuration;
+            _httpContextAccessor = httpContextAccessor;
+            _credentialResolver = credentialResolver;
             _apiUrl = "http://10.24.157.174:51000/AutoStructure/Check"; // フォールバック用
             _userId = _configuration["DataIngestion:ExternalApiUserId"] ?? "ilu-demo";
             _password = _configuration["DataIngestion:ExternalApiPassword"] ?? "ilupass";
@@ -208,6 +215,25 @@ namespace AzureRag.Services
 
         public async Task<AnalyzeResponse> AnalyzeFileAsync(IFormFile file, string userId, string password, string type = null)
         {
+            // 可能ならサーバ側で現在ユーザーの資格に置換
+            try
+            {
+                var name = _httpContextAccessor?.HttpContext?.User?.Identity?.Name;
+                if (!string.IsNullOrEmpty(name))
+                {
+                    var resolved = await _credentialResolver.ResolveAsync(name);
+                    if (resolved != null)
+                    {
+                        userId = resolved.ApiUser;
+                        password = resolved.ApiPass;
+                        _logger.LogInformation("[AnalyzeFileAsync] 資格解決: user={Name}, prefix={Prefix}", name, resolved.S3Prefix);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "資格解決に失敗。引数の資格/既定値を使用します");
+            }
             _logger.LogInformation($"[AnalyzeFileAsync] 受信パラメータ確認: file={file?.FileName}, size={file?.Length ?? 0}B, userId={userId}, type={(string.IsNullOrWhiteSpace(type) ? "(none)" : type)}");
             // AWS ALBから健全なエンドポイントを取得
             var healthyEndpoints = await GetHealthyEndpointsFromALBAsync();
@@ -420,6 +446,25 @@ namespace AzureRag.Services
 
         public async Task<AutoStructureResponse> GetStructuredDataAsync(string workId)
         {
+            // 可能ならサーバ側で現在ユーザーの資格を解決
+            try
+            {
+                var name = _httpContextAccessor?.HttpContext?.User?.Identity?.Name;
+                if (!string.IsNullOrEmpty(name))
+                {
+                    var resolved = await _credentialResolver.ResolveAsync(name);
+                    if (resolved != null)
+                    {
+                        _userId = resolved.ApiUser;
+                        _password = resolved.ApiPass;
+                        _logger.LogInformation("[GetStructuredDataAsync] 資格解決: user={Name}, prefix={Prefix}", name, resolved.S3Prefix);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "資格解決に失敗。既定値を使用します");
+            }
             // 引数で渡されたwork_idを使用する
             // work_idが空または無効の場合はデフォルト値を使用
             if (string.IsNullOrEmpty(workId))

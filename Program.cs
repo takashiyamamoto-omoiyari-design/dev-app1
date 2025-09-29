@@ -127,6 +127,14 @@ builder.Services.AddSingleton<System.IO.Abstractions.IFileSystem, System.IO.Abst
 // builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
 builder.Services.AddHttpClient();
 
+// AWS S3 クライアントとユーザーディレクトリ解決を登録
+var awsRegion = builder.Configuration["Aws:Region"] ?? builder.Configuration["Aws__Region"] ?? "ap-northeast-1";
+Amazon.RegionEndpoint? regionEndpoint = Amazon.RegionEndpoint.GetBySystemName(awsRegion);
+builder.Services.AddSingleton<Amazon.S3.IAmazonS3>(sp => new Amazon.S3.AmazonS3Client(regionEndpoint));
+builder.Services.AddSingleton<AzureRag.Services.UserDirectory.IUserDirectory, AzureRag.Services.UserDirectory.S3UserDirectory>();
+builder.Services.AddSingleton<AzureRag.Services.UserDirectory.IExternalCredentialResolver, AzureRag.Services.UserDirectory.ExternalCredentialResolver>();
+builder.Services.AddHttpContextAccessor();
+
 // PDF処理用サービスを登録
 builder.Services.AddSingleton<IPdfTextExtractionService, PdfTextExtractionService>();
 builder.Services.AddSingleton<ITokenEstimationService, TokenEstimationService>();

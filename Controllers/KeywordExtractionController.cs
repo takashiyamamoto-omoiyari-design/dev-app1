@@ -123,8 +123,8 @@ namespace AzureRag.Controllers
                     // 簡単なPOSTリクエストでヘルスチェック
                     var testRequest = new TokenizeApiRequestModel
                     {
-                        UserId = _configuration["DataIngestion:ExternalApiUserId"] ?? "ilu-demo",
-                        Password = _configuration["DataIngestion:ExternalApiPassword"] ?? "ilupass",
+                        UserId = HttpContext.User?.Identity?.Name ?? "",
+                        Password = string.Empty,
                         Type = "",
                         Text = "test" // 最小限のテストデータ
                     };
@@ -308,8 +308,8 @@ namespace AzureRag.Controllers
                         // 新しいTokenize APIリクエスト作成
                         var apiRequest = new TokenizeApiRequestModel
                         {
-                            UserId = _configuration["DataIngestion:ExternalApiUserId"] ?? "ilu-demo",
-                            Password = _configuration["DataIngestion:ExternalApiPassword"] ?? "ilupass",
+                            UserId = HttpContext.User?.Identity?.Name ?? "",
+                            Password = string.Empty,
                             Type = "",
                             Text = request.Text
                         };
@@ -679,8 +679,8 @@ namespace AzureRag.Controllers
                     
                     var apiRequest = new TokenizeApiRequestModel
                     {
-                        UserId = _configuration["DataIngestion:ExternalApiUserId"] ?? "ilu-demo",
-                        Password = _configuration["DataIngestion:ExternalApiPassword"] ?? "ilupass",
+                        UserId = HttpContext.User?.Identity?.Name ?? "",
+                        Password = string.Empty,
                         Type = "",
                         Text = request.Text
                     };

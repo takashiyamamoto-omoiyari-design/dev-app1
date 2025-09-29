@@ -847,8 +847,8 @@ namespace AzureRag.Controllers
                                 
                                 var requestData = new
                                 {
-                                    userId = _configuration["DataIngestion:ExternalApiUserId"] ?? "ilu-demo",
-                                    password = _configuration["DataIngestion:ExternalApiPassword"] ?? "ilupass",
+                                    userId = HttpContext.User?.Identity?.Name ?? string.Empty,
+                                    password = string.Empty,
                                     type = "",
                                     text = query
                                 };
@@ -3999,8 +3999,8 @@ namespace AzureRag.Controllers
                 
                 var apiRequest = new
                 {
-                    userId = "ilu-demo", // 設定値を直接使用
-                    password = "ilupass", // 設定値を直接使用
+                    userId = HttpContext.User?.Identity?.Name ?? string.Empty,
+                    password = string.Empty,
                     type = "",
                     text = message
                 };

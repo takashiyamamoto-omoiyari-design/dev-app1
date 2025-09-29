@@ -16,14 +16,16 @@ namespace AzureRag.Pages
         private readonly IConfiguration _configuration;
         private readonly ILogger<LoginModel> _logger;
         private readonly Dictionary<string, UserCredentials> _users;
+        private readonly AzureRag.Services.UserDirectory.IUserDirectory _userDirectory;
 
         [TempData]
         public string ErrorMessage { get; set; }
 
-        public LoginModel(IConfiguration configuration, ILogger<LoginModel> logger)
+        public LoginModel(IConfiguration configuration, ILogger<LoginModel> logger, AzureRag.Services.UserDirectory.IUserDirectory userDirectory)
         {
             _configuration = configuration;
             _logger = logger;
+            _userDirectory = userDirectory;
             
             // 設定ファイルからユーザー情報を読み込み
             _users = new Dictionary<string, UserCredentials>();
@@ -95,14 +97,14 @@ namespace AzureRag.Pages
                 return Page();
             }
 
-            // ユーザー認証情報を検証
-            if (_users.TryGetValue(username, out var userCredentials) && password == userCredentials.Password)
+            // 1) S3 userinfo.csv を優先
+            if (await _userDirectory.TryValidateUserAsync(username, password))
             {
                 // 認証クレームを作成
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.Name, username),
-                    new Claim(ClaimTypes.Role, userCredentials.Role)
+                    new Claim(ClaimTypes.Role, _users.ContainsKey(username) ? _users[username].Role : "User")
                 };
 
                 var claimsIdentity = new ClaimsIdentity(
@@ -124,6 +126,12 @@ namespace AzureRag.Pages
                 // データ構造化ページにリダイレクト
                 var basePath = GetBasePath();
                 return Redirect($"{basePath}/DataStructuring");
+            }
+            // 2) 互換: 既存のappsettings Users セクションでの検証
+            else if (_users.TryGetValue(username, out var userCredentials) && password == userCredentials.Password)
+            {
+                ErrorMessage = "ユーザー名またはパスワードが正しくありません。";
+                return Page();
             }
             else
             {
