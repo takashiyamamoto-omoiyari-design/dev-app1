@@ -100,6 +100,7 @@ namespace AzureRag.Pages
             // 1) S3 userinfo.csv を優先
             if (await _userDirectory.TryValidateUserAsync(username, password))
             {
+                _logger.LogInformation($"S3 UserDirectoryでユーザー認証成功: {username}");
                 // 認証クレームを作成
                 var claims = new List<Claim>
                 {
@@ -130,8 +131,31 @@ namespace AzureRag.Pages
             // 2) 互換: 既存のappsettings Users セクションでの検証
             else if (_users.TryGetValue(username, out var userCredentials) && password == userCredentials.Password)
             {
-                ErrorMessage = "ユーザー名またはパスワードが正しくありません。";
-                return Page();
+                _logger.LogInformation($"appsettings.jsonでユーザー認証成功 (フォールバック): {username}");
+
+                // 認証クレームを作成（appsettingsのロールを使用）
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.Name, username),
+                    new Claim(ClaimTypes.Role, userCredentials.Role)
+                };
+
+                var claimsIdentity = new ClaimsIdentity(
+                    claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+                var authProperties = new AuthenticationProperties
+                {
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8),
+                    IsPersistent = true
+                };
+
+                await HttpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    new ClaimsPrincipal(claimsIdentity),
+                    authProperties);
+
+                var basePath = GetBasePath();
+                return Redirect($"{basePath}/DataStructuring");
             }
             else
             {
