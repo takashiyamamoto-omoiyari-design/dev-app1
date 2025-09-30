@@ -26,6 +26,7 @@ namespace AzureRag.Controllers
                 private readonly IHttpClientFactory _clientFactory;
         private readonly ILogger<KeywordExtractionController> _logger;
         private readonly IConfiguration _configuration;
+        private readonly AzureRag.Services.UserDirectory.IExternalCredentialResolver _credentialResolver;
 
         // AWS ALB設定
         private readonly string _awsProfile;
@@ -36,11 +37,12 @@ namespace AzureRag.Controllers
         private DateTime _lastEndpointRefresh;
         private readonly TimeSpan _endpointCacheTimeout = TimeSpan.FromMinutes(5); // 5分間キャッシュ
 
-        public KeywordExtractionController(IHttpClientFactory clientFactory, ILogger<KeywordExtractionController> logger, IConfiguration configuration)
+        public KeywordExtractionController(IHttpClientFactory clientFactory, ILogger<KeywordExtractionController> logger, IConfiguration configuration, AzureRag.Services.UserDirectory.IExternalCredentialResolver credentialResolver)
         {
             _clientFactory = clientFactory;
             _logger = logger;
             _configuration = configuration;
+            _credentialResolver = credentialResolver;
             
             // AWS ALB設定 - Tokenize API用
             _awsProfile = "ILURAG";
@@ -306,10 +308,18 @@ namespace AzureRag.Controllers
                         _logger.LogInformation($"[{requestId}]   - BaseAddress: {client.BaseAddress?.ToString() ?? "未設定"}");
                         
                         // 新しいTokenize APIリクエスト作成
+                        var appUserId = HttpContext.User?.Identity?.Name ?? "";
+                        var resolved = await _credentialResolver.ResolveCredentialsAsync(appUserId);
+                        if (resolved == null)
+                        {
+                            _logger.LogWarning($"[{requestId}] 外部API資格情報を解決できませんでした: {appUserId}");
+                            return Unauthorized(new { error = "外部API資格情報が設定されていません", request_id = requestId });
+                        }
+
                         var apiRequest = new TokenizeApiRequestModel
                         {
-                            UserId = HttpContext.User?.Identity?.Name ?? "",
-                            Password = string.Empty,
+                            UserId = resolved.ExternalApiUserId,
+                            Password = resolved.ExternalApiPassword,
                             Type = "",
                             Text = request.Text
                         };
@@ -677,10 +687,16 @@ namespace AzureRag.Controllers
                     var client = _clientFactory.CreateClient();
                     client.Timeout = TimeSpan.FromSeconds(30);
                     
+                    var appUserId = HttpContext.User?.Identity?.Name ?? "";
+                    var resolved = await _credentialResolver.ResolveCredentialsAsync(appUserId);
+                    if (resolved == null)
+                    {
+                        return Unauthorized(new { error = "外部API資格情報が設定されていません", request_id = requestId });
+                    }
                     var apiRequest = new TokenizeApiRequestModel
                     {
-                        UserId = HttpContext.User?.Identity?.Name ?? "",
-                        Password = string.Empty,
+                        UserId = resolved.ExternalApiUserId,
+                        Password = resolved.ExternalApiPassword,
                         Type = "",
                         Text = request.Text
                     };
