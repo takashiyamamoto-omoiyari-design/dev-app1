@@ -309,7 +309,7 @@ namespace AzureRag.Controllers
                         
                         // 新しいTokenize APIリクエスト作成
                         var appUserId = HttpContext.User?.Identity?.Name ?? "";
-                        var resolved = await _credentialResolver.ResolveCredentialsAsync(appUserId);
+                        var resolved = await _credentialResolver.ResolveAsync(appUserId);
                         if (resolved == null)
                         {
                             _logger.LogWarning($"[{requestId}] 外部API資格情報を解決できませんでした: {appUserId}");
@@ -318,8 +318,8 @@ namespace AzureRag.Controllers
 
                         var apiRequest = new TokenizeApiRequestModel
                         {
-                            UserId = resolved.ExternalApiUserId,
-                            Password = resolved.ExternalApiPassword,
+                            UserId = resolved.ApiUser,
+                            Password = resolved.ApiPass,
                             Type = "",
                             Text = request.Text
                         };
@@ -688,15 +688,15 @@ namespace AzureRag.Controllers
                     client.Timeout = TimeSpan.FromSeconds(30);
                     
                     var appUserId = HttpContext.User?.Identity?.Name ?? "";
-                    var resolved = await _credentialResolver.ResolveCredentialsAsync(appUserId);
+                    var resolved = await _credentialResolver.ResolveAsync(appUserId);
                     if (resolved == null)
                     {
                         return Unauthorized(new { error = "外部API資格情報が設定されていません", request_id = requestId });
                     }
                     var apiRequest = new TokenizeApiRequestModel
                     {
-                        UserId = resolved.ExternalApiUserId,
-                        Password = resolved.ExternalApiPassword,
+                        UserId = resolved.ApiUser,
+                        Password = resolved.ApiPass,
                         Type = "",
                         Text = request.Text
                     };
