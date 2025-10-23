@@ -1,0 +1,9 @@
+# 新規アカウント追加手順
+・userinfo.csvに追加（本番、ステージングともに）
+・dev-app1.indexes.jsonに追加
+・dev-app1.users.jsonに追加
+・Azureの物理Indexを追加
+
+# 既存アカウントのインデックス文書削除手順
+・Azureの物理Indexを削除
+・workid_management.jsonのallowedWorkIdsを削除

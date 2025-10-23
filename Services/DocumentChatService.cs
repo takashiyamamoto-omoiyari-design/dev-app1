@@ -73,7 +73,6 @@ namespace AzureRag.Services
             _logger.LogInformation("  🔄 フォールバックモデル: {ClaudeModelFallback}", _claudeModelFallback);
             _logger.LogInformation("  🌏 AWSリージョン: {Region}", _awsRegion);
             _logger.LogInformation("  🧪 テスト用無効モデル設定: {IsInvalid}", _claudeModel.Contains("INVALID"));
-            _logger.LogInformation("  📝 MainIndex: {MainIndex}, SentenceIndex: {SentenceIndex}", _mainIndexName, _sentenceIndexName);
 
         }
 
