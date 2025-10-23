@@ -1,1 +1,0 @@
-dotnet build --configuration Release && dotnet run --project AzureRag.csproj --urls=http://0.0.0.0:5000 --environment Production

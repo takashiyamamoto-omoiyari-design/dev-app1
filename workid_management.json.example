@@ -1,0 +1,29 @@
+{
+  "users": {
+    "admin": {
+      "username": "admin",
+      "allowedWorkIds": ["*"],
+      "role": "Admin",
+      "lastUpdated": "2025-01-01T00:00:00Z"
+    },
+    "testuser": {
+      "username": "testuser",
+      "allowedWorkIds": [
+        "sample-workid-1",
+        "sample-workid-2"
+      ],
+      "role": "User",
+      "lastUpdated": "2025-01-01T00:00:00Z"
+    }
+  },
+  "workIds": {
+    "sample-workid-1": {
+      "name": "サンプル文書1"
+    },
+    "sample-workid-2": {
+      "name": "サンプル文書2"
+    }
+  },
+  "lastUpdated": "2025-01-01T00:00:00Z"
+}
+

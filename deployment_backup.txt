@@ -1,7 +1,0 @@
-# 元の.replitファイルのデプロイ設定（バックアップ）
-[deployment]
-run = ["sh", "-c", "dotnet run --urls=&quot;http://0.0.0.0:5000&quot; --environment Production"]
-
-# この設定に戻す場合は、Replitウェブインターフェースの「Deploy」設定で
-# 実行コマンドを以下のように変更してください：
-# sh -c "dotnet run --urls=http://0.0.0.0:5000 --environment Production"

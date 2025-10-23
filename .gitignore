@@ -43,3 +43,18 @@ x86/
 # NuGet Packages
 *.nupkg
 **/packages/*
+
+# Runtime data files (dynamic, user-specific)
+workid_management.json
+
+# AWS CLI installation (not needed in repository)
+aws/
+
+# Session Manager Plugin installers
+session-manager-plugin.deb
+session-manager-plugin.rpm
+session-manager-plugin.tar.gz
+session-manager-plugin.zip
+
+# Runtime index data
+indexes/*.json
